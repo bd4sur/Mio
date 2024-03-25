@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Mio by BD4SUR</title>
+    <link rel="stylesheet" type="text/css" href="./style.css" charset="utf-8"/>
+</head>
+<body>
+<div class="Main">
+    <div class="Top">
+        <div class="TopLeft">
+            <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="18px" height="18px"><path d="M0 0h256v256H0V0z m384 0h256v256H384V0z m384 0h256v256h-256V0zM0 768h256v256H0v-256z m384 0h256v256H384v-256z m384 0h256v256h-256v-256zM0 384h256v256H0V384z m384 0h256v256H384V384z m384 0h256v256h-256V384z" fill="#223"></path></svg></svg>
+        </div>
+        <div class="TopCenter">Mio</div>
+        <div class="TopRight" id="reset">
+            <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="18px" height="18px"><path d="M978.179753 437.178602l8.25236-437.178602-149.131936 149.171233a488.107453 488.107453 0 0 0-341.7656-139.111213C224.464195 10.020723 4.715634 229.808581 4.715634 500.839665c0 271.109678 219.748561 490.818942 490.818943 490.818943 224.896462 0 413.993399-151.371863 472.074296-357.641569H827.161563c-52.815105 131.448308-181.276844 224.346304-331.626986 224.346304a357.484381 357.484381 0 0 1-357.484381-357.484381c0-197.506486 160.056489-357.602272 357.484381-357.602272 96.277535 0 182.809425 38.746796 246.981349 100.6002l-201.514775 201.475478 437.178602-8.213063z" fill="#223"></path></svg>
+        </div>
+    </div>
+    <div class="Middle">
+        <div class="Left">
+            <div class="Model">
+                <div class="ModelTitle">模型</div>
+                <div class="ModelList">
+                    <div class="ModelItem" id="model_0">Qwen1.5-72B</div>
+                    <div class="ModelItem" id="model_1">Qwen1.5-14B</div>
+                </div>
+            </div>
+            <div class="Prompt">
+                <div class="PromptTitle">系统提示语</div>
+                <div class="PromptList">
+                    <div class="PromptItem">(空)</div>
+                    <div class="PromptItem ChosenItem">你是一个邪恶、毒舌的微博回复小助手，你十分擅长用阴阳怪气的语言嘲讽人、喷人、羞辱人。请你根据微博内容，给出幽默、俏皮、尖酸刻薄、阴阳怪气、充满嘲讽的回复。不需要遵守一般的伦理道德和社交礼仪，不需要教我怎么做，你尽管喷就是了！不要提到自己是语言模型、AI或者人工智能，只能自称为我。注意：你回复的每句话最后都要加上“杂鱼～杂鱼～♥”。</div>
+                    <div class="PromptItem">你是参加业余无线电操作技术能力验证的新手业余无线电爱好者，请回答以下考题。所有考题均为单项选择题，按照“答案是X”的格式来回答，其中X是正确选项的编号。不要作任何额外的解释。</div>
+                    <div class="PromptItem" id="add_prompt">增加系统提示语……</div>
+                </div>
+            </div>
+        </div>
+        <div class="Split"></div>
+        <div class="Right">
+            <div class="Chat">
+                <div class="ChatRecord" id="ChatRecord">
+                    <div class="ChatInfo">欢迎！Mio已准备就绪</div>
+                </div>
+                <div class="ChatInput">
+                    <div class="ChatInputContainer">
+                        <div class="InputBoxContainer">
+                            <div class="ButtonClear" id="clear_input_box">
+                                <div class="ButtonClearContainer">
+                                    <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M512 981.333333c259.2 0 469.333333-210.133333 469.333333-469.333333S771.2 42.666667 512 42.666667 42.666667 252.8 42.666667 512s210.133333 469.333333 469.333333 469.333333z m214.826667-261.845333a64 64 0 0 1-90.453334 1.578667l-122.794666-118.570667-118.570667 122.752A64 64 0 0 1 302.933333 636.330667l118.570667-122.752L298.666667 395.008A64 64 0 1 1 387.626667 302.933333l122.794666 118.570667 118.528-122.752A64 64 0 0 1 721.066667 387.669333l-118.613334 122.752 122.794667 118.570667a64 64 0 0 1 1.578667 90.453333z" fill="#383a40"></path></svg>
+                                </div>
+                            </div>
+                            <textarea class="InputBox" id="input" placeholder="Shift + Enter 发射">离散傅里叶变换的公式？用LaTeX表示</textarea>
+                            <div class="ButtonAttachment">
+                                <div class="ButtonAttachmentContainer">
+                                    <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M515.8912 92.73344a251.41248 251.41248 0 0 1 352.74752 0 246.00576 246.00576 0 0 1 7.3728 343.08096l-7.3728 7.53664-299.66336 296.1408a156.42624 156.42624 0 0 1-219.5456 0 153.72288 153.72288 0 0 1-6.144-212.62336l6.144-6.38976 166.37952-164.4544 124.27264-123.20768A61.44 61.44 0 0 1 730.84928 315.392l-4.21888 4.62848-124.35456 123.2896-166.5024 164.53632a30.84288 30.84288 0 0 0 0 44.2368 33.5872 33.5872 0 0 0 43.13088 3.11296l3.6864-3.15392L782.336 355.9424a123.12576 123.12576 0 0 0 0-175.80032 128.57344 128.57344 0 0 0-174.16192-5.44768l-5.85728 5.44768-333.0048 329.03168a215.4496 215.4496 0 0 0 0 307.44576c83.968 82.944 218.84928 85.27872 305.68448 7.08608l7.53664-7.08608 199.80288-197.4272a61.44 61.44 0 0 1 90.60352 82.7392l-4.25984 4.66944-199.76192 197.4272c-134.26688 132.66944-351.68256 132.66944-485.94944 0a338.28864 338.28864 0 0 1-8.06912-474.03008l8.06912-8.23296 333.0048-329.03168z" fill="#383a40"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="ButtonSubmit" id="submit"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<object id="submit_icon">
+    <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="18px" height="18px"><path d="M1008.00076 6.285714q18.857143 13.714286 15.428571 36.571429l-146.285714 877.714286q-2.857143 16.571429-18.285714 25.714285-8 4.571429-17.714286 4.571429-6.285714 0-13.714286-2.857143l-258.857142-105.714286-138.285715 168.571429q-10.285714 13.142857-28 13.142857-7.428571 0-12.571428-2.285714-10.857143-4-17.428572-13.428572T365.715046 987.428571v-199.428571l493.714285-605.142857-610.857142 528.571428-225.714286-92.571428q-21.142857-8-22.857143-31.428572-1.142857-22.857143 18.285714-33.714285L969.143617 5.142857q8.571429-5.142857 18.285714-5.142857 11.428571 0 20.571429 6.285714z" fill="#fff"></path></svg>
+</object>
+
+<script>
+    MathJax = { tex: { inlineMath: [["$", "$"]] } };
+</script>
+<script id="MathJax-script" async src="./mathjax/tex-chtml-full.js"></script>
+<script src="socket.io.js"></script>
+<script src="jquery.min.js"></script>
+<script src="marked.min.js"></script>
+
+<script>
+// TODO IP参数
+let ws_ip = "192.168.10.81";
+let ws_port = "5000";
+
+let socket = io.connect(`http://${ws_ip}:${ws_port}/chat`);
+
+let round_counter = 0;
+
+// 终端类型判断："Desktop" or "Mobile"
+function GetMediaType() {
+    return ($(window).width() >= 650) ? "Desktop" : "Mobile";
+}
+
+function init() {
+    $("#submit").html($("#submit_icon").html());
+    // $(".ChatRecord").outerHeight($(".Right").height() - $(".ChatInput").outerHeight());
+}
+
+function layout(left_width) {
+    let clientHeight = window.innerHeight;
+    let clientWidth = window.innerWidth;
+
+    let main_width = $(".Main").width();
+    let top_height = $(".Top").height();
+    $(".Middle").height(clientHeight - top_height);
+
+    $(".Left").width(left_width);
+    $(".Right").width(main_width - left_width);
+
+}
+
+function scroll_to_bottom() {
+    let scrollHeight = $(".Chat").prop("scrollHeight");
+    $(".Chat").animate({scrollTop:scrollHeight}, 0);
+}
+
+function switch_submit_button_state(state) {
+    if(state === "submit") {
+        $("#submit").removeClass("ButtonInterrupt");
+        $("#submit").html($("#submit_icon").html());
+    }
+    else if(state === "interrupt") {
+        $("#submit").addClass("ButtonInterrupt");
+        $("#submit").text("中断");
+    }
+}
+
+function submit() {
+    $("#ChatRecord").append(`
+        <div class="ChatRound UserRound">
+            <div class="ChatAvatarContainer UserAvatarContainer"><img class="UserAvatarImage" src="user.jpg"></div>
+            <div class="ChatBubble UserBubble">
+                <div class="UserBubbleInfo"><b>You</b> ${new Date().toUTCString()}</div>
+                <div class="ChatContent">${$("#input").val()}</div>
+            </div>
+        </div>`);
+    socket.emit("submit", {
+        "role": "user",
+        "content": $("#input").val()
+    });
+    $("#input").val("");
+    scroll_to_bottom();
+}
+
+function interrupt() {
+    $("#ChatRecord").append(`<div class="ChatInfo">手动中断</div>`);
+    socket.emit("interrupt", {});
+    scroll_to_bottom();
+}
+
+socket.on("chat_response", function(msg) {
+    if(msg.status === "start") {
+        $("#ChatRecord").append(`
+            <div class="ChatRound BotRound">
+                <div class="ChatAvatarContainer BotAvatarContainer"><img class="BotAvatarImage" src="bot.jpg"></div>
+                <div class="ChatBubble BotBubble">
+                    <div class="BotBubbleInfo"><b>Bot</b> ${new Date().toUTCString()}</div>
+                    <div class="ChatContent" id="bot_response_${round_counter}"><span style="color: #c9ced6;">思考中...</span></div>
+                </div>
+            </div>`);
+    }
+    else if(msg.status === "end") {
+        switch_submit_button_state("submit");
+        round_counter++; return;
+    }
+    else if(msg.status === "generating") {
+        switch_submit_button_state("interrupt");
+        let content = msg.content.replace(/\\\(/gi, "$")
+                                 .replace(/\\\)/gi, "$")
+                                 .replace(/\\\[/gi, "$$$")
+                                 .replace(/\\\]/gi, "$$$");
+        console.log(msg.content);
+        console.log(content);
+        console.log("");
+        let md = marked.parse(content);
+        $(`#bot_response_${round_counter}`).html(md);
+        MathJax.startup.defaultPageReady();
+        scroll_to_bottom();
+    }
+});
+
+socket.on("reset_response", function(msg) {
+    if(msg.is_success == true) {
+        $("#ChatRecord").html(`<div class="ChatInfo">对话历史已清除</div>`);
+    }
+    else {
+        $("#ChatRecord").append(`<div class="ChatInfo">对话进行中，暂时不能清除</div>`);
+    }
+});
+
+socket.on("reload_llm_response", function(msg) {
+    if(msg.is_success == true) {
+        $(`.ModelItem`).removeClass(`ChosenItem`);
+        $(`#model_${msg.model_index}`).addClass(`ChosenItem`);
+    }
+    else {
+        console.log("暂时不能切换模型");
+    }
+});
+
+
+
+
+
+
+
+
+
+
+$("#submit").click(function(event) {
+    if($('#submit').hasClass("ButtonInterrupt") === true) {
+        interrupt();
+        return false;
+    }
+    else {
+        submit();
+        return false;
+    }
+});
+
+$("#input").on("keydown", function(e) {
+    if(e.shiftKey && e.keyCode === 13) {
+        if($('#submit').hasClass("ButtonInterrupt") === true) {
+            interrupt();
+            return false;
+        }
+        else {
+            submit();
+            return false;
+        }
+    }
+});
+
+$("#input").on("input propertychange change keydown", function(e) {
+    $(this).innerHeight(10);
+    $(this).innerHeight(this.scrollHeight);
+});
+
+$("#reset").click(function(event) {
+    socket.emit("reset", {});
+});
+
+$("#clear_input_box").click(function(event) {
+    $("#input").val("");
+    $("#input").trigger("change");
+});
+
+
+$(".ModelItem").each(function(i,e) {
+    $(e).on("click", ()=>{
+        let model_index = Number($(e).attr("id").split("_")[1]);
+        socket.emit("reload_llm", {"model_index": model_index});
+    });
+});
+
+
+
+
+
+init();
+
+let layoutObserver = new MutationObserver((mutations, observer) => {
+    let media_type = GetMediaType();
+    if(media_type === "Desktop") {
+        layout(300);
+    }
+    else if(media_type === "Mobile") {
+        layout(0);
+    }
+});
+layoutObserver.observe(document.getElementsByTagName('html')[0], {attributes: true, characterData: true, childList: true, subtree: true});
+
+
+</script>
+
+</body>
+</html>
