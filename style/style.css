@@ -3,9 +3,15 @@ body {
     padding: 0;
     outline: none;
     overflow: hidden;
+    background-color: #f3f5f8;
 }
 object {
     display: none;
+}
+
+.Main {
+    max-width: 700px;
+    margin: 0 auto;
 }
 
 .Top {
@@ -82,7 +88,7 @@ object {
     margin-bottom: 10px;
     width: 100%;
     height: 120px;
-    background-image: url(./banner.jpg);
+    background-image: url(../res/banner.jpg);
     background-size: cover;
     background-position: center;
     flex-direction: column;
@@ -110,6 +116,16 @@ object {
     padding: 10px 40px;
     box-sizing: border-box;
     width: 100%;
+}
+
+.ModelSelect {
+    font-size: 14px;
+    padding: 5px;
+    width: 100%;
+    outline: none;
+    border: 2px solid #d8dce4;
+    border-radius: 5px;
+    color: #383a40;
 }
 
 .SystemPromptList {
@@ -153,6 +169,10 @@ object {
     background: #15e;
     border-radius: 5px;
 }
+.ModalConfirm:active {
+    background: #0038b9;
+    box-shadow: inset 1px 1px 3px 0px rgba(0, 0, 0, 0.5);
+}
 .ModalCancel {
     display: inline-block;
     margin: 5px;
@@ -162,7 +182,10 @@ object {
     background: #e6e9ef;
     border-radius: 5px;
 }
-
+.ModalCancel:active {
+    background: #ced2da;
+    box-shadow: inset 1px 1px 3px 0px rgba(0, 0, 0, 0.5);
+}
 
 
 .Middle {
@@ -213,6 +236,10 @@ object {
     padding: 10px;
     font-size: 13px;
     letter-spacing: 0.5px;
+    cursor: pointer;
+}
+.GuideQuestion:hover {
+    box-shadow: 0 2px 5px 0 rgb(0 0 0 / 0.1);
 }
 .ChatInfo {
     display: block;
@@ -260,22 +287,6 @@ object {
     color: #383a40;
     background: #fff;
 }
-.UserBubbleInfo {
-    padding: 4px 15px;
-    font-size: 10px;
-    color: #ffffffbb;
-    /* border-bottom: 1px solid #ffffff88; */
-    background: #ffffff55;
-    display: none;
-}
-.BotBubbleInfo {
-    padding: 4px 15px;
-    font-size: 10px;
-    color: #fff;
-    /* border-bottom: 1px solid #e8eaef; */
-    background: #d1d3dd;
-    display: none;
-}
 .ChatContent {
     padding: 10px 15px;
 }
@@ -285,9 +296,32 @@ object {
     font-size: 13px; line-height: 1.5; letter-spacing: 0.5px;
     margin: 8px 0;
 }
+.UserBubbleFooter, .BotBubbleFooter {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 5px 5px 15px;
+    align-items: center;
+}
+.UserBubbleFooter { color: #ffffffaa; }
+.BotBubbleFooter { color:#aaaeba; }
 
-
-
+.UserFooterInfo, .BotFooterInfo {
+    font-size: 10px;
+    margin-right: 10px;
+}
+.UserCopyBubble, .BotCopyBubble {
+    display: flex;
+    font-size: 11px;
+    line-height: 1;
+    flex-direction: row;
+    align-items: center;
+    background: none;
+    padding: 3px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.UserCopyBubble:hover { background: #ffffff50; }
+.BotCopyBubble:hover { background: #383a4010; }
 
 .ChatInput {
     position: sticky;
@@ -295,7 +329,7 @@ object {
     bottom: 0;
     width: 100%;
     padding: 10px 0;
-    background: linear-gradient(0deg, #ffffff, #f3f5f8);
+    background: #f3f5f8;
     text-align: center;
 }
 .ChatInputContainer {
@@ -304,7 +338,7 @@ object {
 }
 .InputBoxContainer {
     display: flex;
-    border: 2px solid #e5e9f2;
+    /* border: 2px solid #e5e9f2; */
     border-radius: 6px;
     background: #ffffff;
     width: 100%;
@@ -312,8 +346,9 @@ object {
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
+    box-shadow: 2px 2px 6px 0px rgb(0 0 0 / 0.1);
 }
-.ButtonClear, .ButtonAttachment {
+.ButtonClear, .ButtonSetting, .ButtonAttachment {
     display: flex;
     cursor: pointer;
     flex-direction: column;
@@ -323,16 +358,19 @@ object {
     height: 28px;
     border-radius: 5px;
 }
-.ButtonClear:hover, .ButtonAttachment:hover {
+.ButtonClear:hover, .ButtonSetting:hover, .ButtonAttachment:hover {
     background-color: #e5e9f2;
 }
 .ButtonClear {
     margin: 0 6px 0 0;
 }
-.ButtonAttachment {
+.ButtonSetting {
     margin: 0 0 0 6px;
 }
-.ButtonClearContainer, .ButtonAttachmentContainer {
+.ButtonAttachment {
+    margin: 0 0 0 3px;
+}
+.ButtonClearContainer, .ButtonAttachmentContainer, .ButtonSettingContainer {
     margin: 0;
     width: 16px;
     height: 16px;
@@ -355,6 +393,23 @@ object {
 .InputBox::placeholder {
     color: #c3c8d1;
 }
+
+.ButtonPTT {
+    border: none;
+    background: #87c800;
+    border-radius: 6px;
+    color: #fff;
+    min-width: 50px;
+    flex-shrink: 0;
+    margin: 1px 10px 1px 0;
+    box-shadow: 2px 2px 6px 0px rgba(0, 0, 0, 0.1);
+}
+.ButtonPTT:active, .ButtonPTT_Active {
+    background: #5f8f00;
+    padding: 1px 0 0 1px;
+    box-shadow: inset 2px 2px 6px 0px rgba(0, 0, 0, 0.5);
+}
+
 .ButtonSubmit {
     border: none;
     background: #15e;
@@ -363,12 +418,23 @@ object {
     min-width: 50px;
     flex-shrink: 0;
     margin: 1px 0 1px 10px;
+    box-shadow: 2px 2px 6px 0px rgb(0 0 0 / 25%);
 }
-
+.ButtonSubmit:active {
+    background: #0038b9;
+    padding: 2px 0 0 2px;
+    box-shadow: inset 2px 2px 6px 0px rgba(0, 0, 0, 0.5);
+}
 
 .ButtonInterrupt {
     background-color: #ffeaf2;
     color: #ff0000;
+    box-shadow: 2px 2px 6px 0px rgb(0 0 0 / 25%);
+}
+.ButtonInterrupt:active {
+    background-color: #ffbbd5;
+    padding: 3px 0 0 3px;
+    box-shadow: inset 2px 2px 6px 0px rgb(0 0 0 / 25%);
 }
 
 

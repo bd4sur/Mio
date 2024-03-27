@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <title>Mio by BD4SUR</title>
-    <link rel="stylesheet" type="text/css" href="./style.css" charset="utf-8"/>
+    <link rel="stylesheet" type="text/css" href="./style/style.css" charset="utf-8"/>
 </head>
 <body>
 
@@ -18,10 +18,21 @@
         </div>
         <div class="ModalTitle">选择语言模型</div>
         <div class="ModalContent">
-            <div style="margin: 5px 0;">语言模型：</div>
-            <div id="model_switch"></div>
-            <div style="margin: 5px 0;">上下文长度：</div>
-            <div id="ctxlen_switch"></div>
+            <select class="ModelSelect" id="model">
+                <optgroup label="通义千问系列">
+                    <option value="qwen15-7b">Qwen1.5-7B (32K)</option>
+                    <option value="qwen15-14b">Qwen1.5-14B (32K)</option>
+                    <option value="qwen15-72b" selected>Qwen1.5-72B (16K)</option>
+                </optgroup>
+                <optgroup label="百川系列">
+                    <option value="baichuan2-7b">Baichuan2-7B</option>
+                    <option value="baichuan2-13b">Baichuan2-13B</option>
+                </optgroup>
+                <optgroup label="GLM系列">
+                    <option value="chatglm3-6b">ChatGLM3-6B</option>
+                    <option value="chatglm3-13b">ChatGLM3-13B</option>
+                </optgroup>
+            </select>
         </div>
         <div class="ModalTitle">系统提示语</div>
         <div class="ModalContent">
@@ -47,7 +58,7 @@
 <div class="Main">
     <div class="Top">
         <div class="TopLeft" id="menu">
-            <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="18px" height="18px"><path d="M0 0h256v256H0V0z m384 0h256v256H384V0z m384 0h256v256h-256V0zM0 768h256v256H0v-256z m384 0h256v256H384v-256z m384 0h256v256h-256v-256zM0 384h256v256H0V384z m384 0h256v256H384V384z m384 0h256v256h-256V384z" fill="#223"></path></svg></svg>
+            <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="18px" height="18px"><path d="M0 0h256v256H0V0z m384 0h256v256H384V0z m384 0h256v256h-256V0zM0 768h256v256H0v-256z m384 0h256v256H384v-256z m384 0h256v256h-256v-256zM0 384h256v256H0V384z m384 0h256v256H384V384z m384 0h256v256h-256V384z" fill="#223"></path></svg>
         </div>
         <div class="TopCenter">Mio</div>
         <div class="TopRight" id="reset">
@@ -76,6 +87,9 @@
             </div>
             <div class="ChatInput">
                 <div class="ChatInputContainer">
+                    <button class="ButtonPTT" id="ptt">
+                        <svg style="vertical-align: middle;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="14301" width="18px" height="18px"><path d="M512 704c106.04 0 192-85.96 192-192V192c0-106.04-85.96-192-192-192S320 85.96 320 192v320c0 106.04 85.96 192 192 192z m320-320h-32c-17.68 0-32 14.32-32 32v96c0 149.6-128.98 269.64-281.58 254.76C353.42 753.78 256 634.22 256 500.6V416c0-17.68-14.32-32-32-32H192c-17.68 0-32 14.32-32 32v80.32c0 179.28 127.94 339.1 304 363.38V928H352c-17.68 0-32 14.32-32 32v32c0 17.68 14.32 32 32 32h320c17.68 0 32-14.32 32-32v-32c0-17.68-14.32-32-32-32h-112v-67.54C731.42 836.94 864 689.8 864 512v-96c0-17.68-14.32-32-32-32z" fill="#ffffff"></path></svg>
+                    </button>
                     <div class="InputBoxContainer">
                         <div class="ButtonClear" id="clear_input_box">
                             <div class="ButtonClearContainer">
@@ -83,6 +97,12 @@
                             </div>
                         </div>
                         <textarea class="InputBox" id="input" placeholder="Shift + Enter 发射">离散傅里叶变换的公式？用LaTeX表示</textarea>
+                        <div class="ButtonSetting" id="setting">
+                            <div class="ButtonSettingContainer">
+                                <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M237.888 79.488l109.056 85.696a381.312 381.312 0 0 1 68.576-24.96L443.936 4.48a516.768 516.768 0 0 1 136.064 0l28.48 135.744c23.808 6.176 46.72 14.56 68.544 24.96l109.056-85.696a514.56 514.56 0 0 1 104.192 87.52L824.864 289.28c14.08 19.744 26.304 40.864 36.48 63.136l138.72 4.48c13.504 42.496 21.632 87.456 23.52 133.984l-128.768 51.616c-1.92 24.672-6.208 48.672-12.608 71.84L985.6 706.88a511.424 511.424 0 0 1-68.128 117.76l-131.84-43.2a385.824 385.824 0 0 1-55.808 46.848l19.712 137.408a508.352 508.352 0 0 1-127.872 46.528l-73.216-117.92a388.576 388.576 0 0 1-72.896 0l-73.216 117.92a508.352 508.352 0 0 1-127.84-46.528l19.68-137.408a385.888 385.888 0 0 1-55.808-46.88l-131.84 43.264A511.488 511.488 0 0 1 38.4 706.88l103.36-92.576c-6.368-23.168-10.624-47.168-12.576-71.84L0.416 490.88c1.92-46.528 9.984-91.488 23.52-134.016l138.688-4.48c10.208-22.24 22.432-43.36 36.512-63.104L133.696 167.04a514.56 514.56 0 0 1 104.192-87.52zM512 704a192 192 0 1 0 0-384 192 192 0 0 0 0 384z" fill="#383a40"></path></svg>
+                            </div>
+                        </div>
+
                         <div class="ButtonAttachment">
                             <div class="ButtonAttachmentContainer">
                                 <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M515.8912 92.73344a251.41248 251.41248 0 0 1 352.74752 0 246.00576 246.00576 0 0 1 7.3728 343.08096l-7.3728 7.53664-299.66336 296.1408a156.42624 156.42624 0 0 1-219.5456 0 153.72288 153.72288 0 0 1-6.144-212.62336l6.144-6.38976 166.37952-164.4544 124.27264-123.20768A61.44 61.44 0 0 1 730.84928 315.392l-4.21888 4.62848-124.35456 123.2896-166.5024 164.53632a30.84288 30.84288 0 0 0 0 44.2368 33.5872 33.5872 0 0 0 43.13088 3.11296l3.6864-3.15392L782.336 355.9424a123.12576 123.12576 0 0 0 0-175.80032 128.57344 128.57344 0 0 0-174.16192-5.44768l-5.85728 5.44768-333.0048 329.03168a215.4496 215.4496 0 0 0 0 307.44576c83.968 82.944 218.84928 85.27872 305.68448 7.08608l7.53664-7.08608 199.80288-197.4272a61.44 61.44 0 0 1 90.60352 82.7392l-4.25984 4.66944-199.76192 197.4272c-134.26688 132.66944-351.68256 132.66944-485.94944 0a338.28864 338.28864 0 0 1-8.06912-474.03008l8.06912-8.23296 333.0048-329.03168z" fill="#383a40"></path></svg>
@@ -103,11 +123,15 @@
 <script>
     MathJax = { tex: { inlineMath: [["$", "$"]] } };
 </script>
-<script id="MathJax-script" async src="./mathjax/tex-chtml-full.js"></script>
-<script src="socket.io.js"></script>
-<script src="jquery.min.js"></script>
-<script src="marked.min.js"></script>
-<script src="components.js"></script>
+<script id="MathJax-script" async src="./lib/mathjax/tex-chtml-full.js"></script>
+<script src="./lib/socket.io.js"></script>
+<script src="./lib/jquery.min.js"></script>
+<script src="./lib/marked.min.js"></script>
+<script src="./lib/components.js"></script>
+
+<script src="./lib/recorder-core.js"></script>
+<script src="./lib/pcm.js"></script>
+<script src="./lib/funasr-ws.js"></script>
 
 <script>
 // TODO IP参数
@@ -170,20 +194,42 @@ function switch_submit_button_state(state) {
 }
 
 function submit() {
+    let date_obj = new Date();
+    let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
     // $(".Guide").remove();
+
+    let input_txt = $("#input").val();
+    console.log(input_txt);
+    let content = input_txt.replace(/\\\(/gi, "$")
+                           .replace(/\\\)/gi, "$")
+                           .replace(/\\\[/gi, "$$$")
+                           .replace(/\\\]/gi, "$$$");
+    let md = marked.parse(content);
+
     $("#ChatRecord").append(`
         <div class="ChatRound UserRound">
-            <div class="ChatAvatarContainer UserAvatarContainer"><img class="UserAvatarImage" src="user.jpg"></div>
+            <div class="ChatAvatarContainer UserAvatarContainer"><img class="UserAvatarImage" src="./res/user.jpg"></div>
             <div class="ChatBubble UserBubble">
-                <div class="UserBubbleInfo"><b>You</b> ${new Date().toUTCString()}</div>
-                <div class="ChatContent">${$("#input").val()}</div>
+                <div class="ChatContent" id="user_${round_counter}">${md}</div>
+                <div class="UserBubbleFooter">
+                    <div class="UserFooterInfo"><b>You</b> ${date_str}</div>
+                    <div class="UserCopyBubble" onclick="navigator.clipboard.writeText($('#user_${round_counter}').text())">
+                        <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="12px" height="12px"><path d="M725.333333 469.333333h-85.333333v85.333334h-85.333333v-85.333334h-85.333334V384h85.333334V298.666667h85.333333v85.333333h85.333333v85.333333z m85.333334-256v426.666667H384V213.333333h426.666667m10.666666-85.333333H373.333333A74.666667 74.666667 0 0 0 298.666667 202.666667v448c0 41.216 33.450667 74.666667 74.666666 74.666666h448A74.666667 74.666667 0 0 0 896 650.666667V202.666667A74.666667 74.666667 0 0 0 821.333333 128M213.333333 298.666667H128v512a85.333333 85.333333 0 0 0 85.333333 85.333333h512v-85.333333H213.333333V298.666667z" fill="#ffffffaa"></path></svg>
+                        <span>复制</span>
+                    </div>
+                </div>
             </div>
         </div>`);
+
     socket.emit("submit", {
         "role": "user",
-        "content": $("#input").val()
+        "content": input_txt
     });
+
     $("#input").val("");
+    $("#input").trigger("change");
+
+    MathJax.startup.defaultPageReady();
     scroll_to_bottom();
 }
 
@@ -194,13 +240,21 @@ function interrupt() {
 }
 
 socket.on("chat_response", function(msg) {
+    let date_obj = new Date();
+    let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
     if(msg.status === "start") {
         $("#ChatRecord").append(`
             <div class="ChatRound BotRound">
-                <div class="ChatAvatarContainer BotAvatarContainer"><img class="BotAvatarImage" src="bot.jpg"></div>
+                <div class="ChatAvatarContainer BotAvatarContainer"><img class="BotAvatarImage" src="./res/bot.jpg"></div>
                 <div class="ChatBubble BotBubble">
-                    <div class="BotBubbleInfo"><b>Bot</b> ${new Date().toUTCString()}</div>
                     <div class="ChatContent" id="bot_response_${round_counter}"><span style="color: #c9ced6;">思考中...</span></div>
+                    <div class="BotBubbleFooter">
+                        <div class="BotFooterInfo"><b>Bot</b> ${date_str}</div>
+                        <div class="BotCopyBubble" onclick="navigator.clipboard.writeText($('#bot_response_${round_counter}').text())">
+                            <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="12px" height="12px"><path d="M725.333333 469.333333h-85.333333v85.333334h-85.333333v-85.333334h-85.333334V384h85.333334V298.666667h85.333333v85.333333h85.333333v85.333333z m85.333334-256v426.666667H384V213.333333h426.666667m10.666666-85.333333H373.333333A74.666667 74.666667 0 0 0 298.666667 202.666667v448c0 41.216 33.450667 74.666667 74.666666 74.666666h448A74.666667 74.666667 0 0 0 896 650.666667V202.666667A74.666667 74.666667 0 0 0 821.333333 128M213.333333 298.666667H128v512a85.333333 85.333333 0 0 0 85.333333 85.333333h512v-85.333333H213.333333V298.666667z" fill="#aaaeba"></path></svg>
+                            <span>复制</span>
+                        </div>
+                    </div>
                 </div>
             </div>`);
     }
@@ -214,9 +268,6 @@ socket.on("chat_response", function(msg) {
                                  .replace(/\\\)/gi, "$")
                                  .replace(/\\\[/gi, "$$$")
                                  .replace(/\\\]/gi, "$$$");
-        console.log(msg.content);
-        console.log(content);
-        console.log("");
         let md = marked.parse(content);
         $(`#bot_response_${round_counter}`).html(md);
         MathJax.startup.defaultPageReady();
@@ -287,12 +338,20 @@ $("#clear_input_box").on("click", function() {
     $("#input").trigger("change");
 });
 
-$("#menu").on("click", function() {
+$("#setting").on("click", function() {
     modal.toggle();
 });
 
 $("#reset").on("click", function() {
     socket.emit("reset", {});
+});
+
+$(".GuideQuestion").each(function(i, elem) {
+    $(elem).on("click", function(event) {
+        let question = $(this).text();
+        $("#input").val(question);
+        $("#input").trigger("change");
+    });
 });
 
 $("#modal_confirm").on("click", function() {
@@ -308,6 +367,230 @@ $("#modal_confirm").on("click", function() {
 $("#modal_cancel").on("click", function() {
     modal.hide();
 });
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////
+// PTT based on FunASR https://github.com/alibaba-damo-academy/FunASR
+// FunASR (c) 2022-2023 by zhaoming,mali aihealthx.com
+// Mio (c) 2024 BD4SUR
+////////////////////////////////////////////////////////////////////////
+
+const wssip = "wss://192.168.10.81:10096";
+
+// 连接; 定义socket连接类对象与语音对象
+let wsconnecter = new WebSocketConnectMethod({
+    wssip: wssip,
+    msgHandle: getJsonMessage,
+    stateHandle: getConnState
+});
+
+// 录音; 定义录音对象,wav格式
+let rec = Recorder({
+    type: "pcm",
+    bitRate: 16,
+    sampleRate: 16000,
+    onProcess: recProcess
+});
+
+let sampleBuf = new Int16Array();
+
+let rec_text = "";  // for online rec asr result
+let offline_text = ""; // for offline rec asr result
+
+function handleWithTimestamp(tmptext, tmptime)
+{
+    console.log( "tmptext: " + tmptext);
+    console.log( "tmptime: " + tmptime);
+    if(tmptime==null || tmptime=="undefined" || tmptext.length<=0)
+    {
+        return tmptext;
+    }
+    tmptext=tmptext.replace(/。|？|，|、|\?|\.|\ /g, ","); // in case there are a lot of "。"
+    var words=tmptext.split(",");  // split to chinese sentence or english words
+    var jsontime=JSON.parse(tmptime); //JSON.parse(tmptime.replace(/\]\]\[\[/g, "],[")); // in case there are a lot segments by VAD
+    var char_index=0; // index for timestamp
+    var text_withtime="";
+    for(var i=0;i<words.length;i++)
+    {
+        if(words[i]=="undefined"  || words[i].length<=0)
+        {
+            continue;
+        }
+        console.log("words===",words[i]);
+        console.log( "words: " + words[i]+",time="+jsontime[char_index][0]/1000);
+        if (/^[a-zA-Z]+$/.test(words[i]))
+        {   // if it is english
+            text_withtime=text_withtime+jsontime[char_index][0]/1000+":"+words[i]+"\n";
+            char_index=char_index+1;  //for english, timestamp unit is about a word
+        }
+        else{
+            // if it is chinese
+            text_withtime=text_withtime+jsontime[char_index][0]/1000+":"+words[i]+"\n";
+            char_index=char_index+words[i].length; //for chinese, timestamp unit is about a char
+        }
+    }
+    return text_withtime;
+}
+
+// 语音识别结果; 对jsonMsg数据解析,将识别结果附加到编辑框中
+function getJsonMessage( jsonMsg ) {
+    console.log( "message: " + JSON.parse(jsonMsg.data)['text'] );
+    var rectxt=""+JSON.parse(jsonMsg.data)['text'];
+    var asrmodel=JSON.parse(jsonMsg.data)['mode'];
+    var timestamp=JSON.parse(jsonMsg.data)['timestamp'];
+    if(asrmodel=="2pass-offline" || asrmodel=="offline")
+    {
+        offline_text=offline_text+handleWithTimestamp(rectxt,timestamp); //rectxt; //.replace(/ +/g,"");
+        rec_text=offline_text;
+    }
+    else
+    {
+        rec_text=rec_text+rectxt; //.replace(/ +/g,"");
+    }
+
+    $("#input").val(offline_text);
+    console.log( "offline_text: " + asrmodel+","+offline_text);
+    console.log( "rec_text: " + rec_text);
+}
+
+// 连接状态响应
+function getConnState( connState ) {
+    if ( connState === 0 ) { //on open
+        console.log('连接成功!请点击开始');
+    } else if ( connState === 1 ) {
+        //stop();
+    } else if ( connState === 2 ) {
+        stop();
+        console.log( 'connecttion error' );
+        alert("连接地址"+document.getElementById('wssip').value+"失败,请检查asr地址和端口。或试试界面上手动授权，再连接。");
+    }
+}
+
+// 开始按钮
+function record()
+{
+    rec.open(function(){
+        rec.start();
+        console.log("开始");
+    });
+}
+
+// 连接按钮
+// 识别启动、停止、清空操作
+function start() {
+    //启动连接
+    var ret=wsconnecter.wsStart();
+    // 1 is ok, 0 is error
+    if(ret==1){
+        console.log("正在连接asr服务器，请等待...");
+        return 1;
+    }
+    else
+    {
+        console.log("连接失败");
+        return 0;
+    }
+}
+
+function stop() {
+    var chunk_size = new Array( 5, 10, 5 );
+    var request = {
+        "chunk_size": chunk_size,
+        "wav_name":  "h5",
+        "is_speaking":  false,
+        "chunk_interval":10,
+        "mode": "online", //getAsrMode(),
+    };
+    console.log(request);
+    if(sampleBuf.length>0){
+        wsconnecter.wsSend(sampleBuf);
+        console.log("sampleBuf.length"+sampleBuf.length);
+        sampleBuf=new Int16Array();
+    }
+    wsconnecter.wsSend( JSON.stringify(request) );
+
+    console.log("发送完数据,请等候,正在识别...");
+
+    //wait 3s for asr result
+    setTimeout(function(){
+        console.log("call stop ws!");
+        wsconnecter.wsStop();
+        console.log("请点击连接");
+    }, 3000 );
+
+    rec.stop(
+        function(blob, duration){
+            // console.log(blob);
+        },
+        function(errMsg){
+            console.log("errMsg: " + errMsg);
+        }
+    );
+}
+
+function recProcess( buffer, powerLevel, bufferDuration, bufferSampleRate,newBufferIdx,asyncEnd ) {
+    var data_48k = buffer[buffer.length-1];
+    var  array_48k = new Array(data_48k);
+    var data_16k=Recorder.SampleData(array_48k,bufferSampleRate,16000).data;
+    sampleBuf = Int16Array.from([...sampleBuf, ...data_16k]);
+    var chunk_size=960; // for asr chunk_size [5, 10, 5]
+    // info_div.innerHTML=""+bufferDuration/1000+"s";
+    while(sampleBuf.length>=chunk_size){
+        sendBuf=sampleBuf.slice(0,chunk_size);
+        sampleBuf=sampleBuf.slice(chunk_size,sampleBuf.length);
+        wsconnecter.wsSend(sendBuf);
+    }
+
+}
+
+
+
+
+
+let ptt_is_pushing = false;
+
+
+$("#ptt").click(function(event) {
+    if(ptt_is_pushing === false) {
+        offline_text = "";
+        start();
+        ptt_is_pushing = true;
+        $("#ptt").addClass("ButtonPTT_Active");
+        record();
+    }
+    else {
+        ptt_is_pushing = false;
+        $("#ptt").removeClass("ButtonPTT_Active");
+        stop();
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
