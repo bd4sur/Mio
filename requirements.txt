@@ -1,0 +1,13 @@
+flask
+flask-socketio
+llama-cpp-python
+autoawq
+optimum
+auto-gptq
+mdtex2html
+torch
+transformers>=4.37.0
+accelerate
+gradio==3.41.2
+httpx[socks]
+pysocks

@@ -135,12 +135,14 @@
 
 <script>
 
-const funasr_ws_ip = "wss://192.168.10.81:10096";
+// const funasr_ws_ip = "wss://192.168.10.81:10096";
+const funasr_ws_ip = "wss://ai.bd4sur.intra:10096";
 
-const llm_ws_ip = "192.168.10.81";
+// const llm_ws_ip = "192.168.10.81";
+const llm_ws_ip = "ai.bd4sur.intra";
 const llm_ws_port = "5000";
 
-let llm_socket = io.connect(`http://${llm_ws_ip}:${llm_ws_port}/chat`);
+let llm_socket = io.connect(`https://${llm_ws_ip}:${llm_ws_port}/chat`, {secure: true});
 
 let funasr = new FunASR(funasr_ws_ip, (text) => {
     $("#input").val(text);
