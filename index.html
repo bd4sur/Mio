@@ -18,11 +18,12 @@
         </div>
         <div class="ModalTitle">选择语言模型</div>
         <div class="ModalContent">
-            <select class="ModelSelect" id="model">
+            <select class="ModelSelect" id="model_config">
                 <optgroup label="通义千问系列">
-                    <option value="qwen15-7b">Qwen1.5-7B (32K)</option>
-                    <option value="qwen15-14b">Qwen1.5-14B (32K)</option>
-                    <option value="qwen15-72b" selected>Qwen1.5-72B (16K)</option>
+                    <option value="qwen15-1b8-32k">Qwen1.5-1.8B (32K)</option>
+                    <option value="qwen15-7b-32k">Qwen1.5-7B (32K)</option>
+                    <option value="qwen15-14b-32k">Qwen1.5-14B (32K)</option>
+                    <option value="qwen15-72b-16k" selected>Qwen1.5-72B (16K)</option>
                 </optgroup>
                 <optgroup label="百川系列">
                     <option value="baichuan2-7b">Baichuan2-7B</option>
@@ -77,10 +78,13 @@
                         <div class="GuideQuestion">帮我制定一个新疆自驾游的计划。</div>
                         <div class="GuideQuestion">最深的深海有多深？</div>
                         <div class="GuideQuestion">鲁迅当年为什么要暴打周树人？</div>
-                        <div style="width: 100%;"></div>
                         <div class="GuideQuestion">人类的本质是复读机吗？</div>
                         <div class="GuideQuestion">抽奖箱里有两个白球一个红球，抽到红球的概率是？</div>
-                        <div class="GuideQuestion">写一篇题为《在山的那边》的散文。</div>
+                        <div class="GuideQuestion">天空为什么是蓝色的？</div>
+                        <div class="GuideQuestion">如何通过目视判断全尺寸八木天线发射方向？</div>
+                        <div class="GuideQuestion">某业余电台操作者听到业余专用频率上出现某种显然出自非业余电台的人为干扰发射，于是按下话筒向该发射者宣传无线电管理法规知识。这种做法是正确的还是错误的？</div>
+                        <div class="GuideQuestion">将2本不同的数学书和1本语文书在书架上随机排成一行，则2本数学书相邻的概率为？</div>
+                        <div class="GuideQuestion">补写出下列名篇名句中的空缺部分。蚓无爪之利，(1)，上食埃土，(2)，用心一也。每至晴初霜旦，(3)，(4)，属引凄异，空谷传响，哀转久绝。春江花朝秋月夜，(5)，岂无山歌与村笛，(6)。</div>
                     </div>
                 </div>
                 <div class="ChatInfo">欢迎！Mio已准备就绪</div>
@@ -135,32 +139,33 @@
 
 <script>
 
-// const funasr_ws_ip = "wss://192.168.10.81:10096";
-const funasr_ws_ip = "wss://ai.bd4sur.intra:10096";
+const ASR_IP_PORT = "wss://ai.bd4sur.intra:10096";
+const LLM_IP_PORT = "https://ai.bd4sur.intra:5000"
 
-// const llm_ws_ip = "192.168.10.81";
-const llm_ws_ip = "ai.bd4sur.intra";
-const llm_ws_port = "5000";
+let llm_socket = io.connect(`${LLM_IP_PORT}/chat`, {secure: true});
 
-let llm_socket = io.connect(`https://${llm_ws_ip}:${llm_ws_port}/chat`, {secure: true});
-
-let funasr = new FunASR(funasr_ws_ip, (text) => {
-    $("#input").val(text);
-    $("#input").trigger("change");
+let funasr = new FunASR(ASR_IP_PORT, (text) => {
+    set_input_box(text);
 });
 
 funasr.get_recorder_permission();
 
+
+
+
 let round_counter = 0;
 
+let SYSTEM_PROMPT_CONTENT = "";
+
+let SESSION_ID = new Date().getTime();
+let CHAT_HISTORY = [{"role": "system", "content": SYSTEM_PROMPT_CONTENT}];
+let CURRENT_MODEL = "qwen15-72b-16k";
+
 let modal = new Modal("modal", "modal_mask");
-
-let model_switch = new SwitchButton("model_switch", ["Qwen1.5-14B", "Qwen1.5-72B"], 1);
-let ctxlen_switch = new SwitchButton("ctxlen_switch", ["512", "1024", "16384", "32768"], 1);
-
-let temperature = new RangeInput("temperature", "温度", 0, 2, 0.1, 1);
-let top_k = new RangeInput("top_k", "Top K", 1, 50, 1, 10);
+let temperature = new RangeInput("temperature", "温度", 0, 2, 0.1, 0.5);
+let top_k = new RangeInput("top_k", "Top K", 1, 50, 1, 2);
 let top_p = new RangeInput("top_p", "Top P", 0, 1, 0.1, 0.9);
+
 
 
 
@@ -170,12 +175,12 @@ function GetMediaType() {
     return ($(window).width() >= 650) ? "Desktop" : "Mobile";
 }
 
-function init() {
+function layout_init() {
     $("#submit").html($("#submit_icon").html());
     // $(".ChatRecord").outerHeight($(".Right").height() - $(".ChatInput").outerHeight());
 }
 
-function layout(left_width) {
+function layout_refresh(left_width) {
     let clientHeight = window.innerHeight;
     let clientWidth = window.innerWidth;
 
@@ -204,6 +209,71 @@ function switch_submit_button_state(state) {
     }
 }
 
+
+function append_user_bubble(markdown, round_counter, date_str) {
+    $("#ChatRecord").append(`
+        <div class="ChatRound UserRound">
+            <div class="ChatAvatarContainer UserAvatarContainer"><img class="UserAvatarImage" src="./res/user.jpg"></div>
+            <div class="ChatBubble UserBubble">
+                <div class="ChatContent" id="user_${round_counter}">${markdown}</div>
+                <div class="UserBubbleFooter">
+                    <div class="UserFooterInfo"><b>You</b> ${date_str}</div>
+                    <div class="UserCopyBubble" onclick="navigator.clipboard.writeText($('#user_${round_counter}').text())">
+                        <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="12px" height="12px"><path d="M725.333333 469.333333h-85.333333v85.333334h-85.333333v-85.333334h-85.333334V384h85.333334V298.666667h85.333333v85.333333h85.333333v85.333333z m85.333334-256v426.666667H384V213.333333h426.666667m10.666666-85.333333H373.333333A74.666667 74.666667 0 0 0 298.666667 202.666667v448c0 41.216 33.450667 74.666667 74.666666 74.666666h448A74.666667 74.666667 0 0 0 896 650.666667V202.666667A74.666667 74.666667 0 0 0 821.333333 128M213.333333 298.666667H128v512a85.333333 85.333333 0 0 0 85.333333 85.333333h512v-85.333333H213.333333V298.666667z" fill="#ffffffaa"></path></svg>
+                        <span>复制</span>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+}
+
+function append_bot_bubble(round_counter, date_str) {
+    $("#ChatRecord").append(`
+        <div class="ChatRound BotRound">
+            <div class="ChatAvatarContainer BotAvatarContainer"><img class="BotAvatarImage" src="./res/bot.jpg"></div>
+            <div class="ChatBubble BotBubble">
+                <div class="ChatContent" id="bot_response_${round_counter}"><span style="color: #c9ced6;">思考中...</span></div>
+                <div class="BotBubbleFooter">
+                    <div class="BotFooterInfo"><b>Bot</b> ${date_str}</div>
+                    <div class="BotCopyBubble" onclick="navigator.clipboard.writeText($('#bot_response_${round_counter}').text())">
+                        <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="12px" height="12px"><path d="M725.333333 469.333333h-85.333333v85.333334h-85.333333v-85.333334h-85.333334V384h85.333334V298.666667h85.333333v85.333333h85.333333v85.333333z m85.333334-256v426.666667H384V213.333333h426.666667m10.666666-85.333333H373.333333A74.666667 74.666667 0 0 0 298.666667 202.666667v448c0 41.216 33.450667 74.666667 74.666666 74.666666h448A74.666667 74.666667 0 0 0 896 650.666667V202.666667A74.666667 74.666667 0 0 0 821.333333 128M213.333333 298.666667H128v512a85.333333 85.333333 0 0 0 85.333333 85.333333h512v-85.333333H213.333333V298.666667z" fill="#aaaeba"></path></svg>
+                        <span>复制</span>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+}
+
+function update_bot_bubble(markdown, round_counter) {
+    $(`#bot_response_${round_counter}`).html(markdown);
+}
+
+function clear_chat_record() {
+    $("#ChatRecord").html("");
+}
+
+function append_chat_info(info) {
+    $("#ChatRecord").append(`<div class="ChatInfo">${info}</div>`);
+}
+
+function set_input_box(content) {
+    $("#input").val(content);
+    $("#input").trigger("change");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function submit() {
     let date_obj = new Date();
     let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
@@ -216,36 +286,33 @@ function submit() {
                            .replace(/\\\[/gi, "$$$")
                            .replace(/\\\]/gi, "$$$");
     let md = marked.parse(content);
+    append_user_bubble(md, round_counter, date_str);
 
-    $("#ChatRecord").append(`
-        <div class="ChatRound UserRound">
-            <div class="ChatAvatarContainer UserAvatarContainer"><img class="UserAvatarImage" src="./res/user.jpg"></div>
-            <div class="ChatBubble UserBubble">
-                <div class="ChatContent" id="user_${round_counter}">${md}</div>
-                <div class="UserBubbleFooter">
-                    <div class="UserFooterInfo"><b>You</b> ${date_str}</div>
-                    <div class="UserCopyBubble" onclick="navigator.clipboard.writeText($('#user_${round_counter}').text())">
-                        <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="12px" height="12px"><path d="M725.333333 469.333333h-85.333333v85.333334h-85.333333v-85.333334h-85.333334V384h85.333334V298.666667h85.333333v85.333333h85.333333v85.333333z m85.333334-256v426.666667H384V213.333333h426.666667m10.666666-85.333333H373.333333A74.666667 74.666667 0 0 0 298.666667 202.666667v448c0 41.216 33.450667 74.666667 74.666666 74.666666h448A74.666667 74.666667 0 0 0 896 650.666667V202.666667A74.666667 74.666667 0 0 0 821.333333 128M213.333333 298.666667H128v512a85.333333 85.333333 0 0 0 85.333333 85.333333h512v-85.333333H213.333333V298.666667z" fill="#ffffffaa"></path></svg>
-                        <span>复制</span>
-                    </div>
-                </div>
-            </div>
-        </div>`);
+    CHAT_HISTORY.push({"role": "user", "content": input_txt});
 
-    llm_socket.emit("submit", {
-        "role": "user",
-        "content": input_txt
-    });
+    let llm_request = {
+        "session_id": SESSION_ID,
+        "timestamp": new Date().getTime(),
+        "config": {
+            "temperature": Number(temperature.getValue()),
+            "top_p": Number(top_p.getValue()),
+            "top_k": Number(top_k.getValue()),
+        },
+        "chatml": CHAT_HISTORY
+    };
 
-    $("#input").val("");
-    $("#input").trigger("change");
+    console.log(llm_request);
+
+    llm_socket.emit("submit", llm_request);
+
+    set_input_box("");
 
     MathJax.startup.defaultPageReady();
     scroll_to_bottom();
 }
 
 function interrupt() {
-    $("#ChatRecord").append(`<div class="ChatInfo">手动中断</div>`);
+    append_chat_info("手动中断");
     llm_socket.emit("interrupt", {});
     scroll_to_bottom();
 }
@@ -254,55 +321,41 @@ llm_socket.on("chat_response", function(msg) {
     let date_obj = new Date();
     let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
     if(msg.status === "start") {
-        $("#ChatRecord").append(`
-            <div class="ChatRound BotRound">
-                <div class="ChatAvatarContainer BotAvatarContainer"><img class="BotAvatarImage" src="./res/bot.jpg"></div>
-                <div class="ChatBubble BotBubble">
-                    <div class="ChatContent" id="bot_response_${round_counter}"><span style="color: #c9ced6;">思考中...</span></div>
-                    <div class="BotBubbleFooter">
-                        <div class="BotFooterInfo"><b>Bot</b> ${date_str}</div>
-                        <div class="BotCopyBubble" onclick="navigator.clipboard.writeText($('#bot_response_${round_counter}').text())">
-                            <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="12px" height="12px"><path d="M725.333333 469.333333h-85.333333v85.333334h-85.333333v-85.333334h-85.333334V384h85.333334V298.666667h85.333333v85.333333h85.333333v85.333333z m85.333334-256v426.666667H384V213.333333h426.666667m10.666666-85.333333H373.333333A74.666667 74.666667 0 0 0 298.666667 202.666667v448c0 41.216 33.450667 74.666667 74.666666 74.666666h448A74.666667 74.666667 0 0 0 896 650.666667V202.666667A74.666667 74.666667 0 0 0 821.333333 128M213.333333 298.666667H128v512a85.333333 85.333333 0 0 0 85.333333 85.333333h512v-85.333333H213.333333V298.666667z" fill="#aaaeba"></path></svg>
-                            <span>复制</span>
-                        </div>
-                    </div>
-                </div>
-            </div>`);
-    }
-    else if(msg.status === "end") {
-        switch_submit_button_state("submit");
-        round_counter++; return;
+        append_bot_bubble(round_counter, date_str);
+        scroll_to_bottom();
     }
     else if(msg.status === "generating") {
         switch_submit_button_state("interrupt");
-        let content = msg.content.replace(/\\\(/gi, "$")
-                                 .replace(/\\\)/gi, "$")
-                                 .replace(/\\\[/gi, "$$$")
-                                 .replace(/\\\]/gi, "$$$");
+        let llm_output = msg.llm_output;
+        let content = llm_output.content.replace(/\\\(/gi, "$")
+                                        .replace(/\\\)/gi, "$")
+                                        .replace(/\\\[/gi, "$$$")
+                                        .replace(/\\\]/gi, "$$$")
+                                        .replace(/\~/gi, "～");
         let md = marked.parse(content);
-        $(`#bot_response_${round_counter}`).html(md);
+        update_bot_bubble(md, round_counter);
         MathJax.startup.defaultPageReady();
         scroll_to_bottom();
     }
-});
-
-llm_socket.on("reset_response", function(msg) {
-    if(msg.is_success == true) {
-        $("#ChatRecord").html(`<div class="ChatInfo">对话历史已清除</div>`);
-    }
-    else {
-        $("#ChatRecord").append(`<div class="ChatInfo">对话进行中，暂时不能清除</div>`);
+    else if(msg.status === "end") {
+        CHAT_HISTORY.push(msg.llm_output)
+        switch_submit_button_state("submit");
+        round_counter++; return;
     }
 });
 
-llm_socket.on("reload_llm_response", function(msg) {
-    if(msg.is_success == true) {
+
+llm_socket.on("change_llm_response", function(res) {
+    if(res.is_success == true) {
+        append_chat_info(res.message);
         $(`.ModelItem`).removeClass(`ChosenItem`);
-        $(`#model_${msg.model_index}`).addClass(`ChosenItem`);
+        $(`#model_${res.model_index}`).addClass(`ChosenItem`);
     }
     else {
-        console.log("暂时不能切换模型");
+        append_chat_info(res.message);
     }
+    modal.hide();
+    $(".ModalThrobberContainer").css("display", "none");
 });
 
 
@@ -345,8 +398,7 @@ $("#input").on("input propertychange change keydown", function(e) {
 
 
 $("#clear_input_box").on("click", function() {
-    $("#input").val("");
-    $("#input").trigger("change");
+    set_input_box("");
 });
 
 $("#setting").on("click", function() {
@@ -354,25 +406,26 @@ $("#setting").on("click", function() {
 });
 
 $("#reset").on("click", function() {
-    llm_socket.emit("reset", {});
+    interrupt();
+    CHAT_HISTORY = [{"role": "system", "content": SYSTEM_PROMPT_CONTENT}];
+    clear_chat_record();
+    append_chat_info("对话历史已清除");
 });
 
 $(".GuideQuestion").each(function(i, elem) {
     $(elem).on("click", function(event) {
         let question = $(this).text();
-        $("#input").val(question);
-        $("#input").trigger("change");
+        set_input_box(question);
     });
 });
 
 $("#modal_confirm").on("click", function() {
-    // llm_socket.emit("reload_llm", {"model_index": model_index});
     $(".ModalThrobberContainer").css("display", "flex");
-    // 模拟延时响应
-    setTimeout(() => {
-        modal.hide();
-        $(".ModalThrobberContainer").css("display", "none");
-    }, 3000);
+    SYSTEM_PROMPT_CONTENT = $("#system_prompt").val();
+    CHAT_HISTORY[0] = {"role": "system", "content": SYSTEM_PROMPT_CONTENT};
+    let llm_config_key = $("#model_config").val();
+    console.log(llm_config_key);
+    llm_socket.emit("change_llm", {"llm_config_key": llm_config_key});
 });
 
 $("#modal_cancel").on("click", function() {
@@ -432,15 +485,15 @@ $("#ptt").on("mouseup touchend", function(event) {
 
 
 
-init();
+layout_init();
 
 let layoutObserver = new MutationObserver((mutations, observer) => {
     let media_type = GetMediaType();
     if(media_type === "Desktop") {
-        layout(300);
+        layout_refresh(300);
     }
     else if(media_type === "Mobile") {
-        layout(0);
+        layout_refresh(0);
     }
 });
 layoutObserver.observe(document.getElementsByTagName('html')[0], {attributes: true, characterData: true, childList: true, subtree: true});

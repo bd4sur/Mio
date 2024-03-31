@@ -18,21 +18,33 @@ LLM_PORT = 5000
 SSL_CERT_PATH = "/home/bd4sur/bd4sur.crt"
 SSL_PRIVATE_KEY_PATH = "/home/bd4sur/key_unencrypted.pem"
 
+CURRENT_LLM_CONFIG_KEY = "qwen15-72b-16k"
 
-
-MODEL_PATH = [
-    "/home/bd4sur/ai/Qwen15/Qwen15-14B-Chat-q4_k_m.gguf",
-    "/home/bd4sur/ai/Qwen15/Qwen15-72B-Chat-q4_k_m.gguf"
-]
+LLM_CONFIG = {
+    "qwen15-1b8-32k": {
+        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-1B8-Chat-q8_0.gguf",
+        "context_length": 32768
+    },
+    "qwen15-7b-32k": {
+        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-7B-Chat-q4_k_m.gguf",
+        "context_length": 32768
+    },
+    "qwen15-14b-32k": {
+        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-14B-Chat-q4_k_m.gguf",
+        "context_length": 32768
+    },
+    "qwen15-72b-16k": {
+        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-72B-Chat-q4_k_m.gguf",
+        "context_length": 16384
+    }
+}
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(12).hex()
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 LLM = None
-SYSTEM_PROMPT = ""
-CHAT_HISTORY = []
-IS_RUNNING = False
+IS_LLM_GENERATING = False
 
 
 def start_https_server():
@@ -49,100 +61,89 @@ def start_https_server():
 
 
 
-def load_gguf_model(model_path):
+def load_gguf_model(model_path, context_length=16384):
     global LLM
+    print(f"Loading {model_path} ...")
     del LLM
     gc.collect()
     LLM = Llama(
         model_path=model_path,
         chat_format="chatml",
-        n_ctx=16384,
+        n_ctx=context_length,
         n_threads=36,
-        n_gpu_layers=81
+        n_gpu_layers=-1,
+        verbose=False
     )
+    print(f"Loaded {model_path}")
 
-@app.route('/')
-def index():
-    return render_template('index.html')
 
-@socketio.on('reload_llm', namespace='/chat')
-def reset_chat_history(req):
-    global CHAT_HISTORY
-    print("请求：切换LLM")
-    if IS_RUNNING == True:
-        print("生成中，无法切换LLM")
-        emit("reload_llm_response", {"is_success": False})
+@socketio.on('change_llm', namespace='/chat')
+def change_llm(msg):
+    global CURRENT_LLM_CONFIG_KEY
+    if IS_LLM_GENERATING == True:
+        emit("change_llm_response", {"is_success": False, "message": "生成中，无法切换LLM。"})
         return
-    model_index = req["model_index"]
-    load_gguf_model(MODEL_PATH[model_index])
-    CHAT_HISTORY = []
-    print("切换LLM成功")
-    emit("reload_llm_response", {"is_success": True, "model_index": model_index})
-
-@socketio.on('reset', namespace='/chat')
-def reset_chat_history(req):
-    global CHAT_HISTORY
-    print("请求：清除对话历史")
-    if IS_RUNNING == True:
-        print("生成中，无法清除对话历史")
-        emit("reset_response", {"is_success": False})
+    llm_config_key = msg["llm_config_key"]
+    if llm_config_key not in LLM_CONFIG:
+        emit("change_llm_response", {"is_success": False, "message": "LLM设置不正确。"})
         return
-    print("清除成功")
-    CHAT_HISTORY = []
-    emit("reset_response", {"is_success": True})
+    if llm_config_key != CURRENT_LLM_CONFIG_KEY:
+        llm_config = LLM_CONFIG[llm_config_key]
+        load_gguf_model(llm_config["model_path"], llm_config["context_length"])
+        CURRENT_LLM_CONFIG_KEY = llm_config_key
+        emit("change_llm_response", {"is_success": True, "message": f"LLM已切换为{llm_config_key}。"})
+    else:
+        emit("change_llm_response", {"is_success": True, "message": f"LLM未切换，仍为{llm_config_key}。"})
+
+
 
 @socketio.on('interrupt', namespace='/chat')
-def interrupt(req):
-    global IS_RUNNING
-    IS_RUNNING = False
+def interrupt(msg):
+    global IS_LLM_GENERATING
+    IS_LLM_GENERATING = False
     print("请求：中断生成")
 
+
 @socketio.on('submit', namespace='/chat')
-def predict(req):
-    global IS_RUNNING
-    if IS_RUNNING == True:
+def predict(msg):
+    global IS_LLM_GENERATING
+    if IS_LLM_GENERATING == True:
         print("Pass")
         return
-    IS_RUNNING = True
+    IS_LLM_GENERATING = True
 
-    req_content = req["content"]
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for user_message, assistant_message in CHAT_HISTORY:
-        messages.append({"role": "user", "content": user_message})
-        messages.append({"role": "assistant", "content": assistant_message})
-    messages.append({"role": "user", "content": req_content})
-
-    emit("chat_response", {"role": "user", "content": req_content, "timestamp": time.ctime(), "status": "start"})
+    emit("chat_response", {"timestamp": time.ctime(), "status": "start", "llm_output": None})
 
     output = LLM.create_chat_completion(
-        messages=messages,
+        messages=msg["chatml"],
         stream=True,
-        temperature=0.5,
-        top_p=0.9,
-        top_k=2
+        temperature=msg["config"]["temperature"],
+        top_p=msg["config"]["temperature"],
+        top_k=msg["config"]["top_k"]
     )
+
     response = ""
     for chunk in output:
-        if IS_RUNNING == False:
+        if IS_LLM_GENERATING == False:
             print("已中断")
             break
-        IS_RUNNING = True
+        IS_LLM_GENERATING = True
         delta = chunk['choices'][0]['delta']
         if 'content' in delta:
             response += delta['content']
-            emit("chat_response", {"role": "assistant", "content": response, "timestamp": time.ctime(), "status": "generating"})
-    emit("chat_response", {"role": "assistant", "content": "", "timestamp": time.ctime(), "status": "end"})
-    IS_RUNNING = False
-    CHAT_HISTORY.append((req_content, response))
+            emit("chat_response", {
+                "timestamp": time.ctime(),
+                "status": "generating",
+                "llm_output": {"role": "assistant", "content": response}
+            })
+    print(f"LLM Response: {response}")
+    emit("chat_response", {
+        "timestamp": time.ctime(),
+        "status": "end",
+        "llm_output": {"role": "assistant", "content": response}
+    })
+    IS_LLM_GENERATING = False
 
-
-@socketio.on('connect', namespace='/chat')
-def test_connect():
-    emit('my response', {'data': 'Connected'})
-
-@socketio.on('disconnect', namespace='/chat')
-def test_disconnect():
-    print('Client disconnected')
 
 if __name__ == '__main__':
     # HTTPS Server
@@ -152,5 +153,6 @@ if __name__ == '__main__':
     # https_server_process.join()
 
     # LLM Server (flask app)
-    load_gguf_model(MODEL_PATH[1])
+    llm_config = LLM_CONFIG[CURRENT_LLM_CONFIG_KEY]
+    load_gguf_model(llm_config["model_path"], llm_config["context_length"])
     socketio.run(app, host=SERVER_IP, port=LLM_PORT, ssl_context=(SSL_CERT_PATH, SSL_PRIVATE_KEY_PATH))
