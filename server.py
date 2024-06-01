@@ -18,7 +18,7 @@ LLM_PORT = 5000
 SSL_CERT_PATH = "/home/bd4sur/bd4sur.crt"
 SSL_PRIVATE_KEY_PATH = "/home/bd4sur/key_unencrypted.pem"
 
-CURRENT_LLM_CONFIG_KEY = "qwen15-72b-16k"
+CURRENT_LLM_CONFIG_KEY = "qwen15-110b-16k"
 
 LLM_CONFIG = {
     "qwen15-1b8-32k": {
@@ -35,6 +35,10 @@ LLM_CONFIG = {
     },
     "qwen15-72b-16k": {
         "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-72B-Chat-q4_k_m.gguf",
+        "context_length": 16384
+    },
+    "qwen15-110b-16k": {
+        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-110B-Chat-q4_k_m.gguf",
         "context_length": 16384
     }
 }
