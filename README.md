@@ -1,10 +1,21 @@
 # Mio
 
-多模态交互智能代理 Intelligent Agent with Multi-modal Interaction
+多模态交互智能代理 Intelligent Agent with Multi-modal Interaction.
 
 基于[llama.cpp](https://github.com/ggerganov/llama.cpp)、[FunASR](https://github.com/alibaba-damo-academy/FunASR)。
 
+![ ](./res/mio.jpg)
+
 ## 安装部署
+
+**安装依赖**
+
+```
+conda create -n mio python==3.11 pysocks -y
+conda activate mio
+cd Mio
+CMAKE_ARGS="-DLLAMA_CUDA=on" pip install -r requirements.txt
+```
 
 **生成自签名SSL证书**
 
