@@ -2,6 +2,7 @@ import os
 import time
 import gc
 from multiprocessing import Process
+from threading import Thread
 
 from http.server import socketserver, SimpleHTTPRequestHandler 
 import ssl
@@ -10,47 +11,49 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 
 from llama_cpp import Llama
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.generation import GenerationConfig
+from transformers import TextIteratorStreamer
+
+USE_SSL = True
 
 SERVER_IP = '0.0.0.0'
-HTTPS_PORT = 8443
+HTTPS_PORT = 8443 if USE_SSL else 8088
 LLM_PORT = 5000
 
 SSL_CERT_PATH = "/home/bd4sur/bd4sur.crt"
 SSL_PRIVATE_KEY_PATH = "/home/bd4sur/key_unencrypted.pem"
 
-CURRENT_LLM_CONFIG_KEY = "qwen2-72b-16k"
+CURRENT_LLM_CONFIG_KEY = "Qwen2-72B-Q4KM-16K"
 
 LLM_CONFIG = {
-    "qwen15-1b8-32k": {
-        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-1B8-Chat-q8_0.gguf",
-        "context_length": 32768
-    },
-    "qwen15-7b-32k": {
-        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-7B-Chat-q4_k_m.gguf",
-        "context_length": 32768
-    },
-    "qwen15-14b-32k": {
+    "Qwen1.5-14B-Q4KM-32K": {
         "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-14B-Chat-q4_k_m.gguf",
         "context_length": 32768
     },
-    "qwen15-72b-16k": {
-        "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-72B-Chat-q4_k_m.gguf",
-        "context_length": 16384
-    },
-    "qwen15-110b-16k": {
+    "Qwen1.5-110B-Q4KM-16K": {
         "model_path": "/home/bd4sur/ai/Qwen15/Qwen15-110B-Chat-q4_k_m.gguf",
         "context_length": 16384
     },
-    "qwen2-1b5-128k": {
+    "Qwen2-1.5B-Q80-128K": {
         "model_path": "/home/bd4sur/ai/Qwen2/Qwen2-1B5-Instruct-q8_0.gguf",
         "context_length": 131072
     },
-    "qwen2-7b-128k": {
+    "Qwen2-7B-Q6K-128K": {
         "model_path": "/home/bd4sur/ai/Qwen2/Qwen2-7B-Instruct-q6_k.gguf",
         "context_length": 131072
     },
-    "qwen2-72b-16k": {
+    "Qwen2-57B-A14B-Q4KM-128K": {
+        "model_path": "/home/bd4sur/ai/Qwen2/Qwen2-57B-A14B-Instruct-q4_k_m.gguf",
+        "context_length": 131072
+    },
+    "Qwen2-72B-Q4KM-16K": {
         "model_path": "/home/bd4sur/ai/Qwen2/Qwen2-72B-Instruct-q4_k_m.gguf",
+        "context_length": 16384
+    },
+    "Qwen2-72B-GPTQ-Int4": {
+        "model_path": "/home/bd4sur/ai/Qwen2/Qwen2-72B-Instruct-GPTQ-Int4",
         "context_length": 16384
     }
 }
@@ -64,25 +67,23 @@ IS_LLM_GENERATING = False
 
 
 def start_https_server():
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ssl_context.load_cert_chain(SSL_CERT_PATH, SSL_PRIVATE_KEY_PATH)
     httpd = socketserver.TCPServer((SERVER_IP, HTTPS_PORT), SimpleHTTPRequestHandler)
-    httpd.socket = ssl_context.wrap_socket(
-        httpd.socket,
-        server_side=True)
+    if USE_SSL:
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ssl_context.load_cert_chain(SSL_CERT_PATH, SSL_PRIVATE_KEY_PATH)
+        httpd.socket = ssl_context.wrap_socket(httpd.socket, server_side=True)
     print(f"Started HTTPS Server {SERVER_IP}:{HTTPS_PORT}")
     httpd.serve_forever()
 
 
-
-
+def llm_gc():
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 def load_gguf_model(model_path, context_length=16384):
-    global LLM
-    print(f"Loading {model_path} ...")
-    del LLM
-    gc.collect()
-    LLM = Llama(
+    print(f"Loading GGUF Model {model_path} ...")
+    model = Llama(
         model_path=model_path,
         chat_format="chatml",
         n_ctx=context_length,
@@ -90,7 +91,51 @@ def load_gguf_model(model_path, context_length=16384):
         n_gpu_layers=-1,
         verbose=False
     )
-    print(f"Loaded {model_path}")
+    print(f"Loaded GGUF Model {model_path}")
+    return ("gguf", model, None, None)
+
+
+
+def load_torch_model_and_tokenizer(model_path):
+    print(f"Loading torch(Transformers) Model {model_path} ...")
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_path, trust_remote_code=True, resume_download=True,
+    )
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        device_map="auto",
+        trust_remote_code=True,
+        resume_download=True,
+        torch_dtype=torch.float16
+    ).eval()
+
+    config = GenerationConfig.from_pretrained(
+        model_path, trust_remote_code=True, resume_download=True,
+    )
+
+    print(f"Loaded torch(Transformers) Model {model_path} ...")
+
+    return ("torch", model, tokenizer, config)
+
+
+
+
+def load_model(model_path, context_length=16384):
+    global LLM
+    del LLM
+    llm_gc()
+    model_type = "gguf" if model_path.split(".")[-1] == "gguf" else "torch"
+    if model_type == "gguf":
+        LLM = load_gguf_model(model_path, context_length)
+    elif model_type == "torch":
+        LLM = load_torch_model_and_tokenizer(model_path)
+
+
+@socketio.on('get_current_llm_key', namespace='/chat')
+def get_current_llm_key():
+    emit("get_current_llm_key_callback", {"current_llm_key": CURRENT_LLM_CONFIG_KEY})
 
 
 @socketio.on('change_llm', namespace='/chat')
@@ -105,7 +150,7 @@ def change_llm(msg):
         return
     if llm_config_key != CURRENT_LLM_CONFIG_KEY:
         llm_config = LLM_CONFIG[llm_config_key]
-        load_gguf_model(llm_config["model_path"], llm_config["context_length"])
+        load_model(llm_config["model_path"], llm_config["context_length"])
         CURRENT_LLM_CONFIG_KEY = llm_config_key
         emit("change_llm_response", {"is_success": True, "message": f"LLM已切换为{llm_config_key}。"})
     else:
@@ -130,28 +175,58 @@ def predict(msg):
 
     emit("chat_response", {"timestamp": time.ctime(), "status": "start", "llm_output": None})
 
-    output = LLM.create_chat_completion(
-        messages=msg["chatml"],
-        stream=True,
-        temperature=msg["config"]["temperature"],
-        top_p=msg["config"]["temperature"],
-        top_k=msg["config"]["top_k"]
-    )
+    model_type = LLM[0]
+    model = LLM[1]
+    tokenizer = LLM[2]
+    # llm_config = LLM[3]
 
     response = ""
-    for chunk in output:
-        if IS_LLM_GENERATING == False:
-            print("已中断")
-            break
-        IS_LLM_GENERATING = True
-        delta = chunk['choices'][0]['delta']
-        if 'content' in delta:
-            response += delta['content']
+
+    if model_type == "gguf":
+        output = model.create_chat_completion(
+            messages=msg["chatml"],
+            stream=True,
+            temperature=msg["config"]["temperature"],
+            top_p=msg["config"]["temperature"],
+            top_k=msg["config"]["top_k"]
+        )
+        for chunk in output:
+            if IS_LLM_GENERATING == False:
+                print("已中断")
+                break
+            IS_LLM_GENERATING = True
+            delta = chunk['choices'][0]['delta']
+            if 'content' in delta:
+                response += delta['content']
+                emit("chat_response", {
+                    "timestamp": time.ctime(),
+                    "status": "generating",
+                    "llm_output": {"role": "assistant", "content": response}
+                })
+
+    elif model_type == "torch":
+        streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+        text = tokenizer.apply_chat_template(
+            msg["chatml"],
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        model_inputs = tokenizer([text], return_tensors="pt").to("cuda")
+        generation_kwargs = dict(model_inputs, streamer=streamer, max_new_tokens=512)
+        thread = Thread(target=model.generate, kwargs=generation_kwargs)
+        thread.start()
+        for new_text in streamer:
+            if IS_LLM_GENERATING == False:
+                print("已中断")
+                break
+            IS_LLM_GENERATING = True
+            response += new_text
             emit("chat_response", {
                 "timestamp": time.ctime(),
                 "status": "generating",
                 "llm_output": {"role": "assistant", "content": response}
             })
+
     print(f"LLM Response: {response}")
     emit("chat_response", {
         "timestamp": time.ctime(),
@@ -170,5 +245,9 @@ if __name__ == '__main__':
 
     # LLM Server (flask app)
     llm_config = LLM_CONFIG[CURRENT_LLM_CONFIG_KEY]
-    load_gguf_model(llm_config["model_path"], llm_config["context_length"])
-    socketio.run(app, host=SERVER_IP, port=LLM_PORT, ssl_context=(SSL_CERT_PATH, SSL_PRIVATE_KEY_PATH))
+    load_model(llm_config["model_path"], llm_config["context_length"])
+
+    if USE_SSL:
+        socketio.run(app, host=SERVER_IP, port=LLM_PORT, ssl_context=(SSL_CERT_PATH, SSL_PRIVATE_KEY_PATH))
+    else:
+        socketio.run(app, host=SERVER_IP, port=LLM_PORT)

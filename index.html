@@ -20,22 +20,21 @@
         <div class="ModalContent">
             <select class="ModelSelect" id="model_config">
                 <optgroup label="通义千问系列">
-                    <option value="qwen15-1b8-32k">Qwen1.5-1.8B (32K)</option>
-                    <option value="qwen15-7b-32k">Qwen1.5-7B (32K)</option>
-                    <option value="qwen15-14b-32k">Qwen1.5-14B (32K)</option>
-                    <option value="qwen15-72b-16k">Qwen1.5-72B (16K)</option>
-                    <option value="qwen15-110b-16k">Qwen1.5-110B (16K)</option>
-                    <option value="qwen2-1b5-128k">Qwen2-1.5B (128K)</option>
-                    <option value="qwen2-7b-128k">Qwen2-7B (128K)</option>
-                    <option value="qwen2-72b-16k" selected>Qwen2-72B (16K)</option>
+                    <option value="Qwen1.5-14B-Q4KM-32K">Qwen1.5-14B (32K)</option>
+                    <option value="Qwen1.5-110B-Q4KM-16K">Qwen1.5-110B (16K)</option>
+                    <option value="Qwen2-1.5B-Q80-128K">Qwen2-1.5B (128K)</option>
+                    <option value="Qwen2-7B-Q6K-128K">Qwen2-7B (128K)</option>
+                    <option value="Qwen2-57B-A14B-Q4KM-128K">Qwen2-57B-A14B (MoE, 128K)</option>
+                    <option value="Qwen2-72B-Q4KM-16K" selected>Qwen2-72B (16K)</option>
+                    <option value="Qwen2-72B-GPTQ-Int4">Qwen2-72B (GPTQ-Int4)</option>
                 </optgroup>
                 <optgroup label="百川系列">
-                    <option value="baichuan2-7b">Baichuan2-7B</option>
-                    <option value="baichuan2-13b">Baichuan2-13B</option>
+                    <option value="Baichuan2-7b">Baichuan2-7B</option>
+                    <option value="Baichuan2-13b">Baichuan2-13B</option>
                 </optgroup>
                 <optgroup label="GLM系列">
-                    <option value="chatglm3-6b">ChatGLM3-6B</option>
-                    <option value="chatglm3-13b">ChatGLM3-13B</option>
+                    <option value="ChatGLM3-6b">ChatGLM3-6B</option>
+                    <option value="ChatGLM3-13b">ChatGLM3-13B</option>
                 </optgroup>
             </select>
         </div>
@@ -206,10 +205,12 @@ function switch_submit_button_state(state) {
     if(state === "submit") {
         $("#submit").removeClass("ButtonInterrupt");
         $("#submit").html($("#submit_icon").html());
+        $("#input").removeAttr("disabled");
     }
     else if(state === "interrupt") {
         $("#submit").addClass("ButtonInterrupt");
         $("#submit").text("中断");
+        $("#input").attr("disabled", "disabled");
     }
 }
 
@@ -275,6 +276,13 @@ function set_input_box(content) {
 
 
 
+function get_current_llm_key() {
+    llm_socket.emit("get_current_llm_key");
+}
+llm_socket.on("get_current_llm_key_callback", function(res) {
+    append_chat_info(`当前LLM：${res.current_llm_key}`);
+    $("#model_config").val(res.current_llm_key)
+});
 
 
 
@@ -308,6 +316,7 @@ function submit() {
     console.log(llm_request);
 
     llm_socket.emit("submit", llm_request);
+    switch_submit_button_state("interrupt");
 
     set_input_box("");
 
@@ -321,10 +330,15 @@ function interrupt() {
     scroll_to_bottom();
 }
 
+let start_generating_timestamp = 0;
+let end_generating_timestamp = 0;
+let char_count = 0;
+
 llm_socket.on("chat_response", function(msg) {
     let date_obj = new Date();
     let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
     if(msg.status === "start") {
+        start_generating_timestamp = new Date().getTime();
         append_bot_bubble(round_counter, date_str);
         scroll_to_bottom();
     }
@@ -337,13 +351,17 @@ llm_socket.on("chat_response", function(msg) {
                                         .replace(/\\\]/gi, "$$$")
                                         .replace(/\~/gi, "～");
         let md = marked.parse(content);
+        char_count = content.length;
         update_bot_bubble(md, round_counter);
         MathJax.startup.defaultPageReady();
         scroll_to_bottom();
     }
     else if(msg.status === "end") {
+        end_generating_timestamp = new Date().getTime();
         CHAT_HISTORY.push(msg.llm_output)
         switch_submit_button_state("submit");
+        let cps = char_count / (end_generating_timestamp - start_generating_timestamp) * 1000;
+        append_chat_info(`生成速度：${cps.toFixed()}字符/秒`);
         round_counter++; return;
     }
 });
@@ -502,6 +520,7 @@ let layoutObserver = new MutationObserver((mutations, observer) => {
 });
 layoutObserver.observe(document.getElementsByTagName('html')[0], {attributes: true, characterData: true, childList: true, subtree: true});
 
+get_current_llm_key();
 
 </script>
 
