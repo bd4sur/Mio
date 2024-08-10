@@ -14,8 +14,25 @@
 conda create -n mio python==3.11 pysocks -y
 conda activate mio
 cd Mio
-CMAKE_ARGS="-DLLAMA_CUDA=on" pip install -r requirements.txt
+CMAKE_ARGS="-DLLAMA_CUDA=on" python -m pip install -r requirements.txt
 ```
+
+[或者单独编译llama.cpp，然后复用已有的`libllama.so`安装llama-cpp-python](https://github.com/abetlen/llama-cpp-python/issues/1070)：
+
+```
+cd /home/bd4sur/ai
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+
+mkdir build
+cd build
+cmake .. -DBUILD_SHARED_LIBS=ON -DGGML_CUDA=ON
+cmake --build . --config Release
+
+export LLAMA_CPP_LIB=/home/bd4sur/ai/llama.cpp/build/src/libllama.so
+CMAKE_ARGS="-DLLAMA_BUILD=OFF" python -m pip install llama-cpp-python
+```
+
 
 **生成自签名SSL证书**
 
@@ -75,7 +92,23 @@ pip install -r requirements.txt
 **启动FunASR容器**
 
 ```
-sudo sh start_funasr.sh
+bash start_funasr.sh
+```
+
+NOTE 设置无需`sudo`执行`docker run`：
+
+```
+# 添加docker用户组
+sudo groupadd docker
+
+# 将添加当前用户到docker用户组
+sudo gpasswd -a ${USER} docker
+
+# 重启docker服务
+sudo service docker restart
+
+# 给docker.sock增加读写权限
+sudo chmod a+rw /var/run/docker.sock
 ```
 
 **启动LLM服务器**
