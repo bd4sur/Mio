@@ -144,6 +144,7 @@ const ASR_IP_PORT = "wss://ai.bd4sur.intra:10096";
 const LLM_IP_PORT = "https://ai.bd4sur.intra:5000"
 
 let llm_socket = io.connect(`${LLM_IP_PORT}/chat`, {secure: true});
+let tts_socket = io.connect(`https://ai.bd4sur.intra:5001/tts`, {secure: true});
 
 let funasr = new FunASR(ASR_IP_PORT, (text) => {
     set_input_box(text);
@@ -151,8 +152,7 @@ let funasr = new FunASR(ASR_IP_PORT, (text) => {
 
 funasr.get_recorder_permission();
 
-
-
+let audioNode = new Audio();
 
 let round_counter = 0;
 
@@ -237,7 +237,7 @@ function append_bot_bubble(round_counter, date_str) {
             <div class="ChatBubble BotBubble">
                 <div class="ChatContent" id="bot_response_${round_counter}"><span style="color: #c9ced6;">思考中...</span></div>
                 <div class="BotBubbleFooter">
-                    <div class="BotFooterInfo"><b>Bot</b> ${date_str}</div>
+                    <div class="BotFooterInfo" id="bot_footer_${round_counter}"><b>Bot</b> ${date_str}</div>
                     <div class="BotCopyBubble" onclick="navigator.clipboard.writeText($('#bot_response_${round_counter}').text())">
                         <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="12px" height="12px"><path d="M725.333333 469.333333h-85.333333v85.333334h-85.333333v-85.333334h-85.333334V384h85.333334V298.666667h85.333333v85.333333h85.333333v85.333333z m85.333334-256v426.666667H384V213.333333h426.666667m10.666666-85.333333H373.333333A74.666667 74.666667 0 0 0 298.666667 202.666667v448c0 41.216 33.450667 74.666667 74.666666 74.666666h448A74.666667 74.666667 0 0 0 896 650.666667V202.666667A74.666667 74.666667 0 0 0 821.333333 128M213.333333 298.666667H128v512a85.333333 85.333333 0 0 0 85.333333 85.333333h512v-85.333333H213.333333V298.666667z" fill="#aaaeba"></path></svg>
                         <span>复制</span>
@@ -249,6 +249,10 @@ function append_bot_bubble(round_counter, date_str) {
 
 function update_bot_bubble(markdown, round_counter) {
     $(`#bot_response_${round_counter}`).html(markdown);
+}
+
+function update_bot_footer(text, round_counter) {
+    $(`#bot_footer_${round_counter}`).html(text);
 }
 
 function clear_chat_record() {
@@ -360,10 +364,31 @@ llm_socket.on("chat_response", function(msg) {
         switch_submit_button_state("submit");
         let cps = char_count / (end_generating_timestamp - start_generating_timestamp) * 1000;
         append_chat_info(`生成速度：${cps.toFixed()}字符/秒`);
+
+        tts_socket.emit("generate", {
+            "session_id": round_counter,
+            "speaker": "speaker",
+            "refine_enabled": true,
+            "refine_prompt": "",
+            "generation_prompt": "[oral_2][break_6]",
+            "texts": [msg.llm_output.content]
+        });
+
         round_counter++; return;
     }
 });
 
+tts_socket.on("generate_start", function(res) {
+    update_bot_footer("正在转语音...", res.session_id);
+});
+
+tts_socket.on("generate_response", function(res) {
+    let date_obj = new Date();
+    let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
+    update_bot_footer(`<b>Bot</b> ${date_str} 语音转换完成`, res.session_id);
+    audioNode.src = `data:audio/mp3;base64,${res.mp3data}`;
+    audioNode.play();
+});
 
 llm_socket.on("change_llm_response", function(res) {
     if(res.is_success == true) {

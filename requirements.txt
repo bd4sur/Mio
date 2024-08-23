@@ -1,13 +1,30 @@
+# General
 flask
 flask-socketio
+numpy<2.0.0
+torch>=2.1.0
+transformers>=4.41.1
+httpx[socks]
+pysocks
+tqdm
+gradio==3.41.2
+
+# LLM
 llama-cpp-python
 autoawq
 optimum
 auto-gptq
 mdtex2html
-torch
-transformers>=4.37.0
 accelerate
-gradio==3.41.2
-httpx[socks]
-pysocks
+
+# ChatTTS
+numba
+torchaudio
+vector_quantize_pytorch
+vocos
+pybase16384
+av
+pydub
+# pynini==2.1.5; sys_platform == 'linux'
+# WeTextProcessing; sys_platform == 'linux'
+# nemo_text_processing; sys_platform == 'linux'

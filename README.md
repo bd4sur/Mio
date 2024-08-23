@@ -2,7 +2,7 @@
 
 多模态交互智能代理 Intelligent Agent with Multi-modal Interaction.
 
-基于[llama.cpp](https://github.com/ggerganov/llama.cpp)、[FunASR](https://github.com/alibaba-damo-academy/FunASR)。
+基于[llama.cpp](https://github.com/ggerganov/llama.cpp)、[FunASR](https://github.com/alibaba-damo-academy/FunASR)、[ChatTTS](https://github.com/2noise/ChatTTS)。
 
 ![ ](./res/mio.jpg)
 
@@ -11,6 +11,8 @@
 **安装依赖**
 
 ```
+sudo apt install ffmpeg libavformat-dev libavcodec-dev libavutil-dev libavdevice-dev libavfilter-dev
+
 conda create -n mio python==3.11 pysocks -y
 conda activate mio
 cd Mio
