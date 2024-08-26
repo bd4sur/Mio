@@ -4,6 +4,8 @@
 
 基于[llama.cpp](https://github.com/ggerganov/llama.cpp)、[FunASR](https://github.com/alibaba-damo-academy/FunASR)、[ChatTTS](https://github.com/2noise/ChatTTS)。
 
+[B站演示视频：Jetson AGX Orin 部署大模型语音对话](https://www.bilibili.com/video/BV1LiYJedETE)
+
 ![ ](./res/mio.jpg)
 
 ## 安装部署

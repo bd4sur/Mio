@@ -2,7 +2,7 @@ docker run -p 10096:10095 -it \
   --rm \
   --privileged=true \
   --name funasr \
-  --volume /home/bd4sur/ai/funasr/models:/workspace/models \
+  --volume /home/bd4sur/ai/_model/FunASR:/workspace/models \
   --workdir /workspace/FunASR/runtime \
   registry.cn-hangzhou.aliyuncs.com/funasr_repo/funasr:funasr-runtime-sdk-online-cpu-0.1.10 \
     /bin/bash run_server_2pass.sh \

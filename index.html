@@ -25,6 +25,7 @@
                     <option value="Qwen2-57B-A14B-Q4KM-128K">Qwen2-57B-A14B (MoE, 128K)</option>
                     <option value="Qwen2-72B-Q4KM-16K">Qwen2-72B (16K)</option>
                     <option value="Qwen2-72B-GPTQ-Int4">Qwen2-72B (GPTQ-Int4)</option>
+                    <option value="Qwen1.5-110B-Q4KM-16K">Qwen1.5-110B (16K)</option>
                 </optgroup>
                 <optgroup label="百川系列">
                     <option value="Baichuan2-7b">Baichuan2-7B</option>
@@ -142,9 +143,10 @@
 
 const ASR_IP_PORT = "wss://ai.bd4sur.intra:10096";
 const LLM_IP_PORT = "https://ai.bd4sur.intra:5000"
+const TTS_IP_PORT = "https://ai.bd4sur.intra:5000"
 
 let llm_socket = io.connect(`${LLM_IP_PORT}/chat`, {secure: true});
-let tts_socket = io.connect(`https://ai.bd4sur.intra:5001/tts`, {secure: true});
+let tts_socket = io.connect(`${TTS_IP_PORT}/tts`, {secure: true});
 
 let funasr = new FunASR(ASR_IP_PORT, (text) => {
     set_input_box(text);
@@ -153,6 +155,7 @@ let funasr = new FunASR(ASR_IP_PORT, (text) => {
 funasr.get_recorder_permission();
 
 let audioNode = new Audio();
+let MP3_BASE64_BUFFER = [];
 
 let round_counter = 0;
 
@@ -168,8 +171,33 @@ let top_k = new RangeInput("top_k", "Top K", 1, 50, 1, 2);
 let top_p = new RangeInput("top_p", "Top P", 0, 1, 0.1, 0.9);
 
 
+// TTS输入分段
+function segment(input_str) {
+    const MAX_CHUNK_LENGTH = 80;
+    let chunks = input_str.split(/[。\n]/gi);
+    let output_chunks = [];
+    let chunk_buffer = [];
+    for(let i = 0; i < chunks.length; i++) {
+        let ck = chunks[i];
+        if(ck.length >= MAX_CHUNK_LENGTH) {
+            output_chunks.push(ck);
+        }
+        else if(ck.length < MAX_CHUNK_LENGTH && ck.length > 0) {
+            chunk_buffer.push(ck);
+        }
+        else if(ck.length <= 0) {
+            continue;
+        }
 
-
+        let ckbuf_len = chunk_buffer.reduce((pv, cv, ci) => (pv + cv.length), 0);
+        if(ckbuf_len >= MAX_CHUNK_LENGTH) {
+            output_chunks.push(chunk_buffer.join("。"));
+            chunk_buffer = [];
+        }
+    }
+    if(chunk_buffer.length > 0) output_chunks.push(chunk_buffer.join("。"));
+    return output_chunks;
+}
 
 // 终端类型判断："Desktop" or "Mobile"
 function GetMediaType() {
@@ -365,13 +393,14 @@ llm_socket.on("chat_response", function(msg) {
         let cps = char_count / (end_generating_timestamp - start_generating_timestamp) * 1000;
         append_chat_info(`生成速度：${cps.toFixed()}字符/秒`);
 
+        let tts_input_texts = segment(msg.llm_output.content);
         tts_socket.emit("generate", {
             "session_id": round_counter,
-            "speaker": "speaker",
+            "speaker": "default",
             "refine_enabled": true,
             "refine_prompt": "",
             "generation_prompt": "[oral_2][break_6]",
-            "texts": [msg.llm_output.content]
+            "texts": tts_input_texts
         });
 
         round_counter++; return;
@@ -386,9 +415,22 @@ tts_socket.on("generate_response", function(res) {
     let date_obj = new Date();
     let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
     update_bot_footer(`<b>Bot</b> ${date_str} 语音转换完成`, res.session_id);
-    audioNode.src = `data:audio/mp3;base64,${res.mp3data}`;
-    audioNode.play();
+
+    console.log("MP3 file received");
+    let mp3_b64 = `data:audio/mp3;base64,${res.mp3data}`;
+    MP3_BASE64_BUFFER.push(mp3_b64);
 });
+
+let player_timer = setInterval(() => {
+    if(audioNode.ended || audioNode.paused) {
+        if(MP3_BASE64_BUFFER.length > 0) {
+            console.log(`MP3 replay, buffer len = ${MP3_BASE64_BUFFER.length}`);
+            let mp3_b64 = MP3_BASE64_BUFFER.shift();
+            audioNode.src = mp3_b64;
+            audioNode.play();
+        }
+    }
+}, 100);
 
 llm_socket.on("change_llm_response", function(res) {
     if(res.is_success == true) {
