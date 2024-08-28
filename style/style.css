@@ -36,7 +36,7 @@ object {
 .TopCenter {
     font-size: 20px;
     font-weight: bold;
-    background-image: -webkit-linear-gradient(320deg, #28cdff, #678bff);
+    background-image: -webkit-linear-gradient(320deg, #00e2ff, #003cff);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -354,7 +354,7 @@ object {
     justify-content: flex-start;
     box-shadow: 2px 2px 6px 0px rgb(0 0 0 / 0.1);
 }
-.ButtonClear, .ButtonSetting, .ButtonAttachment {
+.ButtonClear, .ButtonSetting, .ButtonAttachment, .ButtonTTS {
     display: flex;
     cursor: pointer;
     flex-direction: column;
@@ -364,7 +364,7 @@ object {
     height: 28px;
     border-radius: 5px;
 }
-.ButtonClear:hover, .ButtonSetting:hover, .ButtonAttachment:hover {
+.ButtonHover, .ButtonClear:hover, .ButtonSetting:hover, .ButtonAttachment:hover, .ButtonTTS:hover {
     background-color: #e5e9f2;
 }
 .ButtonClear {
@@ -376,10 +376,18 @@ object {
 .ButtonAttachment {
     margin: 0 0 0 3px;
 }
+.ButtonTTS {
+    margin: 0 0 0 3px;
+}
 .ButtonClearContainer, .ButtonAttachmentContainer, .ButtonSettingContainer {
     margin: 0;
     width: 16px;
     height: 16px;
+}
+.ButtonTTSContainer {
+    margin: 0;
+    width: 20px;
+    height: 20px;
 }
 
 .InputBox {
