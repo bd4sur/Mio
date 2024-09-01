@@ -20,8 +20,10 @@
         <div class="ModalContent">
             <select class="ModelSelect" id="model_config">
                 <optgroup label="通义千问系列">
+                    <option value="Qwen2-VL-2B">Qwen2-VL-2B</option>
+                    <option value="Qwen2-VL-7B" selected>Qwen2-VL-7B</option>
                     <option value="Qwen2-1.5B-Q80-128K">Qwen2-1.5B (128K)</option>
-                    <option value="Qwen2-7B-Q80-128K" selected>Qwen2-7B (128K)</option>
+                    <option value="Qwen2-7B-Q80-128K">Qwen2-7B (128K)</option>
                     <option value="Qwen2-57B-A14B-Q4KM-128K">Qwen2-57B-A14B (MoE, 128K)</option>
                     <option value="Qwen2-72B-Q4KM-16K">Qwen2-72B (16K)</option>
                     <option value="Qwen2-72B-GPTQ-Int4">Qwen2-72B (GPTQ-Int4)</option>
@@ -110,6 +112,7 @@
                             <div class="ButtonAttachmentContainer">
                                 <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16px" height="16px"><path d="M515.8912 92.73344a251.41248 251.41248 0 0 1 352.74752 0 246.00576 246.00576 0 0 1 7.3728 343.08096l-7.3728 7.53664-299.66336 296.1408a156.42624 156.42624 0 0 1-219.5456 0 153.72288 153.72288 0 0 1-6.144-212.62336l6.144-6.38976 166.37952-164.4544 124.27264-123.20768A61.44 61.44 0 0 1 730.84928 315.392l-4.21888 4.62848-124.35456 123.2896-166.5024 164.53632a30.84288 30.84288 0 0 0 0 44.2368 33.5872 33.5872 0 0 0 43.13088 3.11296l3.6864-3.15392L782.336 355.9424a123.12576 123.12576 0 0 0 0-175.80032 128.57344 128.57344 0 0 0-174.16192-5.44768l-5.85728 5.44768-333.0048 329.03168a215.4496 215.4496 0 0 0 0 307.44576c83.968 82.944 218.84928 85.27872 305.68448 7.08608l7.53664-7.08608 199.80288-197.4272a61.44 61.44 0 0 1 90.60352 82.7392l-4.25984 4.66944-199.76192 197.4272c-134.26688 132.66944-351.68256 132.66944-485.94944 0a338.28864 338.28864 0 0 1-8.06912-474.03008l8.06912-8.23296 333.0048-329.03168z" fill="#383a40"></path></svg>
                             </div>
+                            <input type="file" class="InputAttachment" id="imgfile">
                         </div>
 
                         <div class="ButtonTTS" id="tts_switch">
@@ -170,6 +173,7 @@ let SYSTEM_PROMPT_CONTENT = "";
 let SESSION_ID = new Date().getTime();
 let CHAT_HISTORY = [{"role": "system", "content": SYSTEM_PROMPT_CONTENT}];
 let CURRENT_MODEL = "qwen15-72b-16k";
+let IS_VQA = false;
 
 let modal = new Modal("modal", "modal_mask");
 let temperature = new RangeInput("temperature", "温度", 0, 2, 0.1, 0.5);
@@ -306,6 +310,26 @@ function set_input_box(content) {
 
 
 
+let imgfile = document.getElementById("imgfile");
+imgfile.onchange = () => {
+    let file = imgfile.files[0];
+    let Reader = new FileReader();
+    Reader.onloadend = () => {
+        let img = Reader.result;
+        console.log(img);
+        llm_socket.emit("upload_image", img);
+    };
+    Reader.readAsArrayBuffer(file);
+};
+llm_socket.on("upload_image_response", function(res) {
+    let date_obj = new Date();
+    let date_str = `${date_obj.getHours()}:${date_obj.getMinutes()}:${date_obj.getHours()}`;
+    // append_chat_info(`上传图片：${res.message}`);
+    append_user_bubble(`<img src="data:image/jpeg;base64,${res.image_base64}" style="max-width: 200px; border-radius: 5px;">`, round_counter, date_str);
+    IS_VQA = true;
+    setTimeout(scroll_to_bottom, 200);
+});
+
 
 
 
@@ -337,7 +361,13 @@ function submit() {
     let md = marked.parse(content);
     append_user_bubble(md, round_counter, date_str);
 
-    CHAT_HISTORY.push({"role": "user", "content": input_txt});
+    if(IS_VQA === true) {
+        CHAT_HISTORY.push({"role": "user", "content": [{"type": "image"}, {"type": "text", "text": input_txt}]});
+        IS_VQA = false;
+    }
+    else {
+        CHAT_HISTORY.push({"role": "user", "content": input_txt});
+    }
 
     let llm_request = {
         "session_id": SESSION_ID,

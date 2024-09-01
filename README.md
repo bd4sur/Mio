@@ -2,15 +2,19 @@
 
 多模态交互智能代理 Intelligent Agent with Multi-modal Interaction.
 
-基于[llama.cpp](https://github.com/ggerganov/llama.cpp)、[FunASR](https://github.com/alibaba-damo-academy/FunASR)、[ChatTTS](https://github.com/2noise/ChatTTS)。
-
 [B站演示视频：Jetson AGX Orin 部署大模型语音对话](https://www.bilibili.com/video/BV1LiYJedETE)
 
-![ ](./res/mio.jpg)
+![ ](./res/mio-on-jetson.jpg)
 
 ## 安装部署
 
 **安装依赖**
+
+Mio是多个LLM、VLM和TTS模型的缝合怪，各自的依赖相互冲突，因此需要做一点小小的魔改。本人主要在 Jetson AGX Orin 上开发并部署Mio，因此此处记载的信息可能并不通用。
+
+- **PyTorch**：仅可使用[nvidia官方提供的torch、torchvision、torchaudio三件套](https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048)。
+- **Transformers**：Mio仅支持Qwen2-VL这一个VLM，而Qwen2-VL要求`transformers>=4.45.0`。然而，截至2024年8月31日，`transformers==4.45.0.dev0`已不能完美支持`torch<=2.3.0`。因此，需要找到`<site-packages>/transformers/pytorch_utils.py`的`ALL_LAYERNORM_LAYERS`变量，删掉列表中的`nn.RMSNorm`。
+- **Flash-Attention-2**：这个东西在 Jetson AGX Orin 上编译起来非常困难，可以不用。如果一定要编译，需要注意的是：①将`setup.py`中所有涉及`sm_xx`的部分改成`sm_87`（因为Orin的 Ampere GPU 的 Compute Capability == 8.7）；②并行任务数不能高于`MAX_JOBS=6`，否则会耗尽记忆体。
 
 ```
 sudo apt install ffmpeg libavformat-dev libavcodec-dev libavutil-dev libavdevice-dev libavfilter-dev
@@ -87,7 +91,7 @@ openssl x509 -req -days 365 -in bd4sur.csr -signkey key_unencrypted.pem -out bd4
 **创建并进入虚拟环境，安装相关依赖**
 
 ```
-conda create -n mio python=3.11 pysocks -y
+conda create -n mio python=3.10.15 pysocks -y
 
 conda activate mio
 pip install -r requirements.txt
@@ -125,5 +129,23 @@ python server.py
 
 在浏览器中输入`https://ai.bd4sur.intra:8443`，进入对话窗口。
 
+**注意事项**
 
+- 默认关闭自动TTS功能。可以点击输入框旁边的喇叭图标，开启自动TTS功能。由于ChatTTS对硬件性能要求很高，在Jetson上还不能实现实时TTS，因此需要等待比较长的时间才能听到转换后的语音。
+- 视觉问答目前只支持针对一幅图片的连续问答。
+- 选用纯语言模型时，不要上传图片，否则可能会出错。
 
+## 权利声明
+
+版权所有 © 2024 BD4SUR，保留所有权利。
+
+本系统“按原样”提供，采用MIT协议授权。本系统为作者个人以学习和自用目的所创作的作品。作者不对本系统的质量作任何承诺。作者不保证提供有关本系统的任何形式的解释、维护或支持。作者不为任何人使用此系统所造成的任何正面的或负面的后果负责。
+
+**以部分或全部代码形式集成的开源软件**
+
+- [ChatTTS](https://github.com/2noise/ChatTTS)
+- [FunASR](https://github.com/alibaba-damo-academy/FunASR)
+- [jQuery](https://jquery.org/license)
+- [Socket.IO](https://github.com/socketio/socket.io)
+- [marked.js](https://github.com/markedjs/marked)
+- [MathJax](https://github.com/mathjax/MathJax)

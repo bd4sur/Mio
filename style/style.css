@@ -374,6 +374,7 @@ object {
     margin: 0 0 0 6px;
 }
 .ButtonAttachment {
+    position: relative;
     margin: 0 0 0 3px;
 }
 .ButtonTTS {
@@ -388,6 +389,15 @@ object {
     margin: 0;
     width: 20px;
     height: 20px;
+}
+
+.InputAttachment {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 28px;
+    opacity: 0;
 }
 
 .InputBox {

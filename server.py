@@ -17,6 +17,11 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.generation import GenerationConfig
 from transformers import TextIteratorStreamer
 
+# VLM (Qwen2-VL)
+from PIL import Image
+from typing import Dict
+from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+
 # TTS (ChatTTS)
 import ctts
 from ctts.tools.seeder import TorchSeedContext
@@ -35,43 +40,60 @@ SSL_PRIVATE_KEY_PATH = "/home/bd4sur/key_unencrypted.pem"
 
 TTS_MODEL_PATH = "/home/bd4sur/ai/_model/ChatTTS"
 
-CURRENT_LLM_CONFIG_KEY = "Qwen2-7B-Q80-128K"
+CURRENT_LLM_CONFIG_KEY = "Qwen2-VL-7B"
 
 LLM_CONFIG = {
     "Qwen2-1.5B-Q80-128K": {
+        "model_type": "gguf",
         "model_path": "/home/bd4sur/ai/_model/Qwen2/Qwen2-1B5-Instruct-q8_0.gguf",
         "context_length": 131072
     },
     "Qwen2-7B-Q80-128K": {
+        "model_type": "gguf",
         "model_path": "/home/bd4sur/ai/_model/Qwen2/Qwen2-7B-Instruct-q8_0.gguf",
         "context_length": 131072
     },
     "Qwen2-57B-A14B-Q4KM-128K": {
+        "model_type": "gguf",
         "model_path": "/home/bd4sur/ai/_model/Qwen2/Qwen2-57B-A14B-Instruct-q4_k_m.gguf",
         "context_length": 131072
     },
     "Qwen2-72B-Q4KM-16K": {
+        "model_type": "gguf",
         "model_path": "/home/bd4sur/ai/_model/Qwen2/Qwen2-72B-Instruct-q4_k_m.gguf",
         "context_length": 16384
     },
     "Qwen2-72B-GPTQ-Int4": {
+        "model_type": "torch",
         "model_path": "/home/bd4sur/ai/_model/Qwen2/Qwen2-72B-Instruct-GPTQ-Int4",
         "context_length": 16384
     },
     "Qwen1.5-110B-Q4KM-16K": {
+        "model_type": "gguf",
         "model_path": "/home/bd4sur/ai/_model/Qwen15/Qwen15-110B-Chat-q4_k_m.gguf",
+        "context_length": 16384
+    },
+    "Qwen2-VL-2B": {
+        "model_type": "qwen2vl",
+        "model_path": "/home/bd4sur/ai/_model/Qwen2-VL-2B-Instruct",
+        "context_length": 16384
+    },
+    "Qwen2-VL-7B": {
+        "model_type": "qwen2vl",
+        "model_path": "/home/bd4sur/ai/_model/Qwen2-VL-7B-Instruct",
         "context_length": 16384
     }
 }
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(12).hex()
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=100000000)
 
 logger = get_logger("Mio")
 
 LLM = None
 IS_LLM_GENERATING = False
+CURRENT_IMAGE_PATH = ""
 
 TTS = ctts.CTTS(logger)
 
@@ -210,18 +232,25 @@ def load_torch_model_and_tokenizer(model_path):
 
     return ("torch", model, tokenizer, config)
 
+def load_qwen2vl_model_and_processor(model_path):
+    print(f"Loading Qwen2-VL model: {model_path} ...")
+    model = Qwen2VLForConditionalGeneration.from_pretrained(
+        model_path, torch_dtype=torch.bfloat16, device_map="auto" , attn_implementation="flash_attention_2"
+    )
+    processor = AutoProcessor.from_pretrained(model_path)
+    return ("qwen2vl", model, processor, None)
 
 
-
-def load_model(model_path, context_length=16384):
+def load_model(model_type, model_path, context_length=16384):
     global LLM
     del LLM
     llm_gc()
-    model_type = "gguf" if model_path.split(".")[-1] == "gguf" else "torch"
     if model_type == "gguf":
         LLM = load_gguf_model(model_path, context_length)
     elif model_type == "torch":
         LLM = load_torch_model_and_tokenizer(model_path)
+    elif model_type == "qwen2vl":
+        LLM = load_qwen2vl_model_and_processor(model_path)
 
 
 @socketio.on('get_current_llm_key', namespace='/chat')
@@ -241,7 +270,7 @@ def change_llm(msg):
         return
     if llm_config_key != CURRENT_LLM_CONFIG_KEY:
         llm_config = LLM_CONFIG[llm_config_key]
-        load_model(llm_config["model_path"], llm_config["context_length"])
+        load_model(llm_config["model_type"], llm_config["model_path"], llm_config["context_length"])
         CURRENT_LLM_CONFIG_KEY = llm_config_key
         emit("change_llm_response", {"is_success": True, "message": f"LLM已切换为{llm_config_key}。"})
     else:
@@ -256,6 +285,25 @@ def interrupt(msg):
     print("请求：中断生成")
 
 
+
+
+@socketio.on('upload_image', namespace='/chat')
+def upload_image(imgfile):
+    global CURRENT_IMAGE_PATH
+    timestamp = time.monotonic_ns()
+    imgfilename = f"img_{timestamp}.bin"
+    with open(imgfilename, "wb+") as f:
+        f.write(imgfile)
+    print(f"Image {imgfilename} uploaded.")
+    CURRENT_IMAGE_PATH = imgfilename
+    emit("upload_image_response", {
+        "is_success": True,
+        "message": f"Image file img_{timestamp}.bin uploaded.",
+        "image_base64": base64.b64encode(imgfile).decode("ascii")
+    })
+
+
+
 @socketio.on('submit', namespace='/chat')
 def predict(msg):
     global IS_LLM_GENERATING
@@ -267,13 +315,11 @@ def predict(msg):
     emit("chat_response", {"timestamp": time.ctime(), "status": "start", "llm_output": None})
 
     model_type = LLM[0]
-    model = LLM[1]
-    tokenizer = LLM[2]
-    # llm_config = LLM[3]
 
     response = ""
 
     if model_type == "gguf":
+        model = LLM[1]
         output = model.create_chat_completion(
             messages=msg["chatml"],
             stream=True,
@@ -296,6 +342,8 @@ def predict(msg):
                 })
 
     elif model_type == "torch":
+        model = LLM[1]
+        tokenizer = LLM[2]
         streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
         text = tokenizer.apply_chat_template(
             msg["chatml"],
@@ -318,6 +366,37 @@ def predict(msg):
                 "llm_output": {"role": "assistant", "content": response}
             })
 
+    elif model_type == "qwen2vl":
+        model = LLM[1]
+        processor = LLM[2]
+
+        streamer = TextIteratorStreamer(processor.tokenizer, skip_prompt=True, skip_special_tokens=True, timeout=10)
+        image = Image.open(CURRENT_IMAGE_PATH)
+
+        print(msg["chatml"])
+        text_prompt = processor.apply_chat_template(msg["chatml"], add_generation_prompt=True)
+        # Excepted output: '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Describe this image.<|im_end|>\n<|im_start|>assistant\n'
+        inputs = processor(text=[text_prompt], images=[image], padding=True, return_tensors="pt")
+        inputs = inputs.to("cuda")
+        inputs["streamer"] = streamer
+        inputs["max_new_tokens"] = 512
+
+        thread = Thread(target=model.generate, kwargs=inputs)
+        thread.start()
+
+        for new_text in streamer:
+            if IS_LLM_GENERATING == False:
+                print("已中断")
+                break
+            IS_LLM_GENERATING = True
+            response += new_text
+            emit("chat_response", {
+                "timestamp": time.ctime(),
+                "status": "generating",
+                "llm_output": {"role": "assistant", "content": response}
+            })
+
+
     print(f"LLM Response: {response}")
     emit("chat_response", {
         "timestamp": time.ctime(),
@@ -339,7 +418,7 @@ if __name__ == '__main__':
 
     # LLM Server (flask app)
     llm_config = LLM_CONFIG[CURRENT_LLM_CONFIG_KEY]
-    load_model(llm_config["model_path"], llm_config["context_length"])
+    load_model(llm_config["model_type"], llm_config["model_path"], llm_config["context_length"])
 
     if USE_SSL:
         socketio.run(app, host=SERVER_IP, port=API_PORT, debug=False, log_output=False, ssl_context=(SSL_CERT_PATH, SSL_PRIVATE_KEY_PATH))
